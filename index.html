@@ -1,0 +1,545 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>IoT Edge Dashboard — Live</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&display=swap');
+ 
+  :root {
+    --bg: #0a0e1a;
+    --surface: #111827;
+    --surface2: #1a2235;
+    --border: #1e2d45;
+    --accent: #00d4ff;
+    --accent2: #00ff9d;
+    --accent3: #ff6b35;
+    --accent4: #a855f7;
+    --accent5: #f59e0b;
+    --text: #e2e8f0;
+    --text-dim: #64748b;
+  }
+ 
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+ 
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'IBM Plex Mono', monospace;
+    min-height: 100vh;
+  }
+ 
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(0,212,255,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0,212,255,0.03) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none;
+    z-index: 0;
+  }
+ 
+  .container { position: relative; z-index: 1; padding: 24px; max-width: 1400px; margin: 0 auto; }
+ 
+  .config-bar {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 14px 20px;
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+ 
+  .config-label { font-size: 12px; color: var(--text-dim); white-space: nowrap; }
+ 
+  .config-input {
+    flex: 1;
+    min-width: 300px;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 8px 14px;
+    color: var(--text);
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 13px;
+    outline: none;
+  }
+ 
+  .config-input:focus { border-color: var(--accent); }
+ 
+  .btn {
+    padding: 8px 20px;
+    border-radius: 6px;
+    border: none;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 13px;
+    cursor: pointer;
+    transition: all 0.2s;
+    white-space: nowrap;
+  }
+ 
+  .btn-primary { background: var(--accent); color: var(--bg); font-weight: 600; }
+  .btn-primary:hover { opacity: 0.85; }
+  .btn-danger { background: rgba(255,107,53,0.2); color: var(--accent3); border: 1px solid rgba(255,107,53,0.3); }
+ 
+  header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 24px;
+    padding-bottom: 20px;
+    border-bottom: 1px solid var(--border);
+  }
+ 
+  .header-left h1 { font-size: 20px; color: var(--accent); letter-spacing: 2px; text-transform: uppercase; }
+  .header-left p { font-size: 12px; color: var(--text-dim); margin-top: 4px; }
+  .header-right { display: flex; align-items: center; gap: 12px; }
+ 
+  .status-pill {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 16px;
+    border-radius: 100px;
+    font-size: 12px;
+    border: 1px solid;
+  }
+ 
+  .status-pill.live { background: rgba(0,255,157,0.1); border-color: rgba(0,255,157,0.3); color: var(--accent2); }
+  .status-pill.loading { background: rgba(245,158,11,0.1); border-color: rgba(245,158,11,0.3); color: var(--accent5); }
+  .status-pill.error { background: rgba(255,107,53,0.1); border-color: rgba(255,107,53,0.3); color: var(--accent3); }
+ 
+  .pulse { width: 8px; height: 8px; border-radius: 50%; animation: pulse 2s infinite; }
+  .live .pulse { background: var(--accent2); }
+  .loading .pulse { background: var(--accent5); }
+  .error .pulse { background: var(--accent3); animation: none; }
+ 
+  @keyframes pulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.4; transform: scale(0.7); }
+  }
+ 
+  .last-update { font-size: 11px; color: var(--text-dim); }
+ 
+  .stats-row {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 14px;
+    margin-bottom: 24px;
+  }
+ 
+  .stat-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 16px 20px;
+    position: relative;
+    overflow: hidden;
+  }
+ 
+  .stat-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px; }
+  .stat-card.blue::before { background: var(--accent); }
+  .stat-card.green::before { background: var(--accent2); }
+  .stat-card.orange::before { background: var(--accent3); }
+  .stat-card.purple::before { background: var(--accent4); }
+  .stat-card.yellow::before { background: var(--accent5); }
+ 
+  .stat-label { font-size: 11px; color: var(--text-dim); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 6px; }
+  .stat-value { font-size: 28px; font-weight: 600; }
+  .stat-card.blue .stat-value { color: var(--accent); }
+  .stat-card.green .stat-value { color: var(--accent2); }
+  .stat-card.orange .stat-value { color: var(--accent3); }
+  .stat-card.purple .stat-value { color: var(--accent4); }
+  .stat-card.yellow .stat-value { color: var(--accent5); }
+ 
+  .main-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
+ 
+  .card-header {
+    padding: 14px 18px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+ 
+  .card-title { font-size: 12px; color: var(--text-dim); text-transform: uppercase; letter-spacing: 1px; }
+ 
+  .card-badge {
+    font-size: 11px;
+    padding: 3px 10px;
+    border-radius: 100px;
+    background: rgba(0,212,255,0.1);
+    color: var(--accent);
+    border: 1px solid rgba(0,212,255,0.2);
+  }
+ 
+  .device-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; padding: 14px; }
+ 
+  .device-item {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 12px;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+ 
+  .device-item:hover { border-color: var(--accent); }
+  .device-item.active { border-color: var(--accent); background: rgba(0,212,255,0.05); }
+ 
+  .device-name { font-size: 11px; color: var(--text); margin-bottom: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .device-count { font-size: 22px; font-weight: 600; }
+  .device-sub { font-size: 10px; color: var(--text-dim); }
+  .device-dot { width: 5px; height: 5px; border-radius: 50%; display: inline-block; margin-left: 5px; animation: pulse 2s infinite; }
+ 
+  .metrics-list { padding: 4px 0; max-height: 320px; overflow-y: auto; }
+  .metrics-list::-webkit-scrollbar { width: 4px; }
+  .metrics-list::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+ 
+  .metric-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 18px;
+    border-bottom: 1px solid var(--border);
+    transition: background 0.15s;
+  }
+ 
+  .metric-row:last-child { border-bottom: none; }
+  .metric-row:hover { background: var(--surface2); }
+  .metric-name { font-size: 12px; color: var(--text-dim); }
+  .metric-val { font-size: 14px; font-weight: 600; }
+  .metric-val.num { color: var(--accent); }
+  .metric-val.bool-true { color: var(--accent2); }
+  .metric-val.bool-false { color: var(--text-dim); }
+  .metric-val.alert { color: var(--accent3); }
+ 
+  .alert-list { padding: 12px; }
+ 
+  .alert-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 12px 14px;
+    border-radius: 8px;
+    margin-bottom: 10px;
+  }
+ 
+  .alert-item.warn { background: rgba(255,107,53,0.1); border: 1px solid rgba(255,107,53,0.3); }
+ 
+  .alert-icon { font-size: 16px; margin-top: 1px; }
+  .alert-text { font-size: 13px; }
+  .alert-item.warn .alert-text { color: var(--accent3); }
+  .alert-sub { font-size: 10px; color: var(--text-dim); margin-top: 3px; }
+ 
+  .timeline { padding: 14px 18px; max-height: 300px; overflow-y: auto; }
+ 
+  .tl-item { display: flex; gap: 12px; margin-bottom: 12px; align-items: flex-start; }
+  .tl-time { font-size: 10px; color: var(--text-dim); width: 75px; flex-shrink: 0; padding-top: 2px; }
+  .tl-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; margin-top: 4px; }
+  .tl-content { flex: 1; font-size: 12px; color: var(--text); line-height: 1.5; }
+  .tl-device { font-size: 10px; color: var(--text-dim); margin-top: 2px; }
+ 
+  .no-data { text-align: center; padding: 40px 20px; color: var(--text-dim); font-size: 13px; }
+ 
+  @media (max-width: 768px) {
+    .stats-row { grid-template-columns: repeat(2, 1fr); }
+    .main-grid { grid-template-columns: 1fr; }
+    .device-grid { grid-template-columns: repeat(2, 1fr); }
+  }
+</style>
+</head>
+<body>
+<div class="container">
+ 
+  <div class="config-bar">
+    <span class="config-label">🔗 Azure Function URL:</span>
+    <input class="config-input" id="apiUrl" type="text" placeholder="https://func-edgeforwarder-xxx.azurewebsites.net/api/GetLatestData?code=..." />
+    <button class="btn btn-primary" onclick="startFetching()">▶ Connect</button>
+    <button class="btn btn-danger" onclick="stopFetching()">■ Stop</button>
+  </div>
+ 
+  <header>
+    <div class="header-left">
+      <h1>Edge Forwarder Dashboard</h1>
+      <p id="gatewayInfo">Waiting for connection...</p>
+    </div>
+    <div class="header-right">
+      <span class="last-update" id="lastUpdate">—</span>
+      <div class="status-pill loading" id="statusPill">
+        <span class="pulse"></span>
+        <span id="statusText">Idle</span>
+      </div>
+    </div>
+  </header>
+ 
+  <div class="stats-row">
+    <div class="stat-card blue">
+      <div class="stat-label">Devices</div>
+      <div class="stat-value" id="statDevices">—</div>
+    </div>
+    <div class="stat-card green">
+      <div class="stat-label">Messages</div>
+      <div class="stat-value" id="statMessages">—</div>
+    </div>
+    <div class="stat-card orange">
+      <div class="stat-label">Alerts</div>
+      <div class="stat-value" id="statAlerts">—</div>
+    </div>
+    <div class="stat-card purple">
+      <div class="stat-label">Metrics</div>
+      <div class="stat-value" id="statMetrics">—</div>
+    </div>
+    <div class="stat-card yellow">
+      <div class="stat-label">Data Quality</div>
+      <div class="stat-value" id="statQuality">—</div>
+    </div>
+  </div>
+ 
+  <div class="main-grid">
+ 
+    <div class="card">
+      <div class="card-header">
+        <span class="card-title">Device Status</span>
+        <span class="card-badge" id="deviceBadge">—</span>
+      </div>
+      <div class="device-grid" id="deviceGrid">
+        <div class="no-data" style="grid-column:1/-1">Waiting for data...</div>
+      </div>
+    </div>
+ 
+    <div class="card">
+      <div class="card-header">
+        <span class="card-title">Alerts</span>
+        <span class="card-badge" id="alertBadge" style="color:var(--accent3);border-color:rgba(255,107,53,0.3);background:rgba(255,107,53,0.1)">—</span>
+      </div>
+      <div class="alert-list" id="alertList">
+        <div class="no-data">Waiting for data...</div>
+      </div>
+    </div>
+ 
+    <div class="card">
+      <div class="card-header">
+        <span class="card-title" id="metricsTitle">Select a device above</span>
+        <span class="card-badge">METRICS</span>
+      </div>
+      <div class="metrics-list" id="metricsList">
+        <div class="no-data">Click a device to see its metrics</div>
+      </div>
+    </div>
+ 
+    <div class="card">
+      <div class="card-header">
+        <span class="card-title">Live Events</span>
+        <span class="card-badge">TIMELINE</span>
+      </div>
+      <div class="timeline" id="timeline">
+        <div class="no-data">Waiting for data...</div>
+      </div>
+    </div>
+ 
+  </div>
+</div>
+ 
+<script>
+let interval = null;
+let totalMessages = 0;
+let selectedDevice = null;
+let allData = [];
+ 
+const ALERT_KEYS = ['DALI_Bus_Error', 'Watchdog_Event', 'PowerUp_Event'];
+const DEVICE_COLORS = {
+  'WB_MSW_A': '#00d4ff',
+  'WB_MSW_B': '#00d4ff',
+  'Eastrone_Quadro': '#f59e0b',
+  'SENECA_test_Quadro': '#a855f7',
+  'Resi_dali_SIO_QuadroG': '#00ff9d',
+  'Dat3130_QuadroC': '#ff6b35'
+};
+ 
+function startFetching() {
+  const url = document.getElementById('apiUrl').value.trim();
+  if (!url) { alert('Please enter the Azure Function URL'); return; }
+  if (interval) clearInterval(interval);
+  fetchData(url);
+  interval = setInterval(() => fetchData(url), 10000);
+}
+ 
+function stopFetching() {
+  if (interval) { clearInterval(interval); interval = null; }
+  setStatus('loading', 'Stopped');
+}
+ 
+function setStatus(type, text) {
+  const pill = document.getElementById('statusPill');
+  pill.className = `status-pill ${type}`;
+  document.getElementById('statusText').textContent = text;
+}
+ 
+async function fetchData(url) {
+  try {
+    setStatus('loading', 'Fetching...');
+    const res = await fetch(url);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const json = await res.json();
+    allData = json.data || [];
+    totalMessages += allData.length;
+    processData(allData);
+    setStatus('live', 'LIVE');
+    document.getElementById('lastUpdate').textContent =
+      'Last update: ' + new Date().toLocaleTimeString();
+  } catch (err) {
+    setStatus('error', 'Error');
+    console.error(err);
+  }
+}
+ 
+function processData(data) {
+  if (!data.length) return;
+ 
+  const sample = data[0];
+  document.getElementById('gatewayInfo').textContent =
+    `${sample.gatewayId} / ${sample.tenantId} / ${sample.protocol}`;
+ 
+  const devices = {};
+  const metrics = {};
+  const alerts = [];
+ 
+  data.forEach(msg => {
+    const dev = msg.deviceId;
+    if (!devices[dev]) devices[dev] = 0;
+    devices[dev]++;
+    if (!metrics[dev]) metrics[dev] = {};
+    const key = Object.keys(msg.metrics)[0];
+    const val = msg.metrics[key];
+    metrics[dev][key] = val;
+    if (ALERT_KEYS.includes(key) && val === true) {
+      alerts.push({ device: dev, key, time: msg.timestamp });
+    }
+  });
+ 
+  document.getElementById('statDevices').textContent = Object.keys(devices).length;
+  document.getElementById('statMessages').textContent = totalMessages;
+  document.getElementById('statAlerts').textContent = alerts.length;
+  document.getElementById('statMetrics').textContent =
+    Object.values(metrics).reduce((s, m) => s + Object.keys(m).length, 0);
+  document.getElementById('statQuality').textContent = 'GOOD';
+  document.getElementById('deviceBadge').textContent = `${Object.keys(devices).length} ONLINE`;
+ 
+  renderDeviceGrid(devices, metrics);
+  renderAlerts(alerts);
+  renderTimeline(data);
+ 
+  if (selectedDevice && metrics[selectedDevice]) {
+    renderMetrics(selectedDevice, metrics[selectedDevice]);
+  }
+}
+ 
+function renderDeviceGrid(devices, metrics) {
+  const grid = document.getElementById('deviceGrid');
+  grid.innerHTML = '';
+  Object.entries(devices).forEach(([dev, count]) => {
+    const color = DEVICE_COLORS[dev] || '#00d4ff';
+    const shortName = dev.replace('_Quadro', '').replace('_test', '');
+    const div = document.createElement('div');
+    div.className = `device-item${selectedDevice === dev ? ' active' : ''}`;
+    div.innerHTML = `
+      <div class="device-name">${shortName} <span class="device-dot" style="background:${color}"></span></div>
+      <div class="device-count" style="color:${color}">${Object.keys(metrics[dev] || {}).length}</div>
+      <div class="device-sub">active metrics</div>
+    `;
+    div.onclick = () => {
+      selectedDevice = dev;
+      renderMetrics(dev, metrics[dev] || {});
+      document.querySelectorAll('.device-item').forEach(d => d.classList.remove('active'));
+      div.classList.add('active');
+    };
+    grid.appendChild(div);
+  });
+}
+ 
+function renderMetrics(deviceId, metricsObj) {
+  document.getElementById('metricsTitle').textContent = deviceId;
+  const list = document.getElementById('metricsList');
+  list.innerHTML = '';
+  if (!Object.keys(metricsObj).length) {
+    list.innerHTML = '<div class="no-data">No metrics available</div>';
+    return;
+  }
+  Object.entries(metricsObj).forEach(([key, val]) => {
+    const isAlert = ALERT_KEYS.includes(key) && val === true;
+    let cls = 'num';
+    let display = val;
+    if (typeof val === 'boolean') {
+      cls = val ? (isAlert ? 'alert' : 'bool-true') : 'bool-false';
+      display = val ? (isAlert ? 'TRUE ⚠️' : 'TRUE ✓') : 'FALSE';
+    } else if (typeof val === 'number') {
+      display = Math.round(val * 1000) / 1000;
+    }
+    const row = document.createElement('div');
+    row.className = 'metric-row';
+    row.innerHTML = `<span class="metric-name">${key}</span><span class="metric-val ${cls}">${display}</span>`;
+    list.appendChild(row);
+  });
+}
+ 
+function renderAlerts(alerts) {
+  const list = document.getElementById('alertList');
+  document.getElementById('alertBadge').textContent = `${alerts.length} ALERT`;
+  if (!alerts.length) {
+    list.innerHTML = '<div class="no-data" style="color:var(--accent2)">✓ No active alerts</div>';
+    return;
+  }
+  list.innerHTML = '';
+  alerts.forEach(a => {
+    const time = new Date(a.time).toLocaleTimeString();
+    const div = document.createElement('div');
+    div.className = 'alert-item warn';
+    div.innerHTML = `
+      <span class="alert-icon">⚠️</span>
+      <div>
+        <div class="alert-text">${a.key} = true</div>
+        <div class="alert-sub">${a.device} — ${time}</div>
+      </div>
+    `;
+    list.appendChild(div);
+  });
+}
+ 
+function renderTimeline(data) {
+  const tl = document.getElementById('timeline');
+  tl.innerHTML = '';
+  const recent = [...data].reverse().slice(0, 15);
+  recent.forEach(msg => {
+    const key = Object.keys(msg.metrics)[0];
+    const val = msg.metrics[key];
+    const time = new Date(msg.timestamp).toLocaleTimeString();
+    const color = DEVICE_COLORS[msg.deviceId] || '#00d4ff';
+    const isAlert = ALERT_KEYS.includes(key) && val === true;
+    let valDisplay = typeof val === 'boolean'
+      ? `<span style="color:${val ? (isAlert ? 'var(--accent3)' : 'var(--accent2)') : 'var(--text-dim)'}">${val}</span>`
+      : `<span style="color:${color}">${Math.round(val * 1000) / 1000}</span>`;
+    const item = document.createElement('div');
+    item.className = 'tl-item';
+    item.innerHTML = `
+      <div class="tl-time">${time}</div>
+      <div class="tl-dot" style="background:${isAlert ? 'var(--accent3)' : color}"></div>
+      <div class="tl-content">
+        ${key} = ${valDisplay}
+        <div class="tl-device">${msg.deviceId}</div>
+      </div>
+    `;
+    tl.appendChild(item);
+  });
+}
+</script>
+</body>
+</html>
+ 
