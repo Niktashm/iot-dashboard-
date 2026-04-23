@@ -42,51 +42,93 @@
     z-index: 0;
   }
  
-  .container { position: relative; z-index: 1; padding: 24px; max-width: 1400px; margin: 0 auto; }
- 
-  .config-bar {
-    background: var(--surface2);
-    border: 1px solid var(--border);
-    border-radius: 10px;
-    padding: 14px 20px;
-    margin-bottom: 20px;
+  /* LOGIN */
+  .login-page {
+    position: fixed;
+    inset: 0;
+    z-index: 100;
     display: flex;
     align-items: center;
-    gap: 12px;
-    flex-wrap: wrap;
+    justify-content: center;
+    background: var(--bg);
   }
  
-  .config-label { font-size: 12px; color: var(--text-dim); white-space: nowrap; }
+  .login-box {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 40px;
+    width: 420px;
+    position: relative;
+    overflow: hidden;
+  }
  
-  .config-input {
-    flex: 1;
-    min-width: 300px;
+  .login-box::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, var(--accent), var(--accent4));
+  }
+ 
+  .login-logo { text-align: center; margin-bottom: 32px; }
+  .login-logo h1 { font-size: 18px; color: var(--accent); letter-spacing: 3px; text-transform: uppercase; margin-bottom: 6px; }
+  .login-logo p { font-size: 12px; color: var(--text-dim); }
+ 
+  .login-field { margin-bottom: 20px; }
+  .login-label { font-size: 11px; color: var(--text-dim); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px; display: block; }
+ 
+  .login-input {
+    width: 100%;
     background: var(--bg);
     border: 1px solid var(--border);
-    border-radius: 6px;
-    padding: 8px 14px;
+    border-radius: 8px;
+    padding: 12px 16px;
     color: var(--text);
     font-family: 'IBM Plex Mono', monospace;
-    font-size: 13px;
+    font-size: 14px;
     outline: none;
+    transition: border-color 0.2s;
   }
  
-  .config-input:focus { border-color: var(--accent); }
+  .login-input:focus { border-color: var(--accent); }
  
-  .btn {
-    padding: 8px 20px;
-    border-radius: 6px;
+  .login-btn {
+    width: 100%;
+    padding: 14px;
+    background: var(--accent);
+    color: var(--bg);
     border: none;
+    border-radius: 8px;
     font-family: 'IBM Plex Mono', monospace;
-    font-size: 13px;
+    font-size: 14px;
+    font-weight: 600;
     cursor: pointer;
-    transition: all 0.2s;
-    white-space: nowrap;
+    transition: opacity 0.2s;
+    margin-top: 8px;
+    letter-spacing: 1px;
   }
  
-  .btn-primary { background: var(--accent); color: var(--bg); font-weight: 600; }
-  .btn-primary:hover { opacity: 0.85; }
-  .btn-danger { background: rgba(255,107,53,0.2); color: var(--accent3); border: 1px solid rgba(255,107,53,0.3); }
+  .login-btn:hover { opacity: 0.85; }
+ 
+  .login-error {
+    background: rgba(255,107,53,0.1);
+    border: 1px solid rgba(255,107,53,0.3);
+    border-radius: 8px;
+    padding: 12px 16px;
+    font-size: 13px;
+    color: var(--accent3);
+    margin-top: 16px;
+    display: none;
+  }
+ 
+  .login-error.show { display: block; }
+ 
+  /* DASHBOARD */
+  .dashboard { display: none; }
+  .dashboard.show { display: block; }
+ 
+  .container { position: relative; z-index: 1; padding: 24px; max-width: 1400px; margin: 0 auto; }
  
   header {
     display: flex;
@@ -125,14 +167,22 @@
     50% { opacity: 0.4; transform: scale(0.7); }
   }
  
+  .logout-btn {
+    padding: 7px 16px;
+    border-radius: 6px;
+    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--text-dim);
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 12px;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+ 
+  .logout-btn:hover { border-color: var(--accent3); color: var(--accent3); }
   .last-update { font-size: 11px; color: var(--text-dim); }
  
-  .stats-row {
-    display: grid;
-    grid-template-columns: repeat(5, 1fr);
-    gap: 14px;
-    margin-bottom: 24px;
-  }
+  .stats-row { display: grid; grid-template-columns: repeat(5, 1fr); gap: 14px; margin-bottom: 24px; }
  
   .stat-card {
     background: var(--surface);
@@ -233,14 +283,12 @@
   }
  
   .alert-item.warn { background: rgba(255,107,53,0.1); border: 1px solid rgba(255,107,53,0.3); }
- 
-  .alert-icon { font-size: 16px; margin-top: 1px; }
+  .alert-icon { font-size: 16px; }
   .alert-text { font-size: 13px; }
   .alert-item.warn .alert-text { color: var(--accent3); }
   .alert-sub { font-size: 10px; color: var(--text-dim); margin-top: 3px; }
  
   .timeline { padding: 14px 18px; max-height: 300px; overflow-y: auto; }
- 
   .tl-item { display: flex; gap: 12px; margin-bottom: 12px; align-items: flex-start; }
   .tl-time { font-size: 10px; color: var(--text-dim); width: 75px; flex-shrink: 0; padding-top: 2px; }
   .tl-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; margin-top: 4px; }
@@ -253,128 +301,182 @@
     .stats-row { grid-template-columns: repeat(2, 1fr); }
     .main-grid { grid-template-columns: 1fr; }
     .device-grid { grid-template-columns: repeat(2, 1fr); }
+    .login-box { width: 90%; padding: 28px 24px; }
   }
 </style>
 </head>
 <body>
-<div class="container">
  
-  <div class="config-bar">
-    <span class="config-label">🔗 Azure Function URL:</span>
-    <input class="config-input" id="apiUrl" type="text" placeholder="https://func-edgeforwarder-xxx.azurewebsites.net/api/GetLatestData?code=..." />
-    <button class="btn btn-primary" onclick="startFetching()">▶ Connect</button>
-    <button class="btn btn-danger" onclick="stopFetching()">■ Stop</button>
-  </div>
- 
-  <header>
-    <div class="header-left">
-      <h1>Edge Forwarder Dashboard</h1>
-      <p id="gatewayInfo">Waiting for connection...</p>
-    </div>
-    <div class="header-right">
-      <span class="last-update" id="lastUpdate">—</span>
-      <div class="status-pill loading" id="statusPill">
-        <span class="pulse"></span>
-        <span id="statusText">Idle</span>
+  <!-- LOGIN PAGE -->
+  <div class="login-page" id="loginPage">
+    <div class="login-box">
+      <div class="login-logo">
+        <h1>Edge Forwarder</h1>
+        <p>IoT Live Dashboard — Secure Access</p>
       </div>
-    </div>
-  </header>
  
-  <div class="stats-row">
-    <div class="stat-card blue">
-      <div class="stat-label">Devices</div>
-      <div class="stat-value" id="statDevices">—</div>
-    </div>
-    <div class="stat-card green">
-      <div class="stat-label">Messages</div>
-      <div class="stat-value" id="statMessages">—</div>
-    </div>
-    <div class="stat-card orange">
-      <div class="stat-label">Alerts</div>
-      <div class="stat-value" id="statAlerts">—</div>
-    </div>
-    <div class="stat-card purple">
-      <div class="stat-label">Metrics</div>
-      <div class="stat-value" id="statMetrics">—</div>
-    </div>
-    <div class="stat-card yellow">
-      <div class="stat-label">Data Quality</div>
-      <div class="stat-value" id="statQuality">—</div>
+      <div class="login-field">
+        <label class="login-label">Function URL</label>
+        <input class="login-input" id="loginUrl" type="text"
+          placeholder="https://func-xxx.azurewebsites.net/api/GetLatestData" />
+      </div>
+ 
+      <div class="login-field">
+        <label class="login-label">Tenant ID</label>
+        <input class="login-input" id="loginTenant" type="text" placeholder="tenant-test" />
+      </div>
+ 
+      <div class="login-field">
+        <label class="login-label">API Key</label>
+        <input class="login-input" id="loginKey" type="password" placeholder="Your API key" />
+      </div>
+ 
+      <button class="login-btn" onclick="doLogin()">▶ Connect</button>
+      <div class="login-error" id="loginError">Invalid credentials. Please try again.</div>
     </div>
   </div>
  
-  <div class="main-grid">
+  <!-- DASHBOARD -->
+  <div class="dashboard" id="dashboard">
+    <div class="container">
  
-    <div class="card">
-      <div class="card-header">
-        <span class="card-title">Device Status</span>
-        <span class="card-badge" id="deviceBadge">—</span>
+      <header>
+        <div class="header-left">
+          <h1>Edge Forwarder Dashboard</h1>
+          <p id="gatewayInfo">Connecting...</p>
+        </div>
+        <div class="header-right">
+          <span class="last-update" id="lastUpdate">—</span>
+          <div class="status-pill loading" id="statusPill">
+            <span class="pulse"></span>
+            <span id="statusText">Connecting</span>
+          </div>
+          <button class="logout-btn" onclick="doLogout()">⏏ Logout</button>
+        </div>
+      </header>
+ 
+      <div class="stats-row">
+        <div class="stat-card blue"><div class="stat-label">Devices</div><div class="stat-value" id="statDevices">—</div></div>
+        <div class="stat-card green"><div class="stat-label">Messages</div><div class="stat-value" id="statMessages">—</div></div>
+        <div class="stat-card orange"><div class="stat-label">Alerts</div><div class="stat-value" id="statAlerts">—</div></div>
+        <div class="stat-card purple"><div class="stat-label">Metrics</div><div class="stat-value" id="statMetrics">—</div></div>
+        <div class="stat-card yellow"><div class="stat-label">Data Quality</div><div class="stat-value" id="statQuality">—</div></div>
       </div>
-      <div class="device-grid" id="deviceGrid">
-        <div class="no-data" style="grid-column:1/-1">Waiting for data...</div>
+ 
+      <div class="main-grid">
+ 
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title">Device Status</span>
+            <span class="card-badge" id="deviceBadge">—</span>
+          </div>
+          <div class="device-grid" id="deviceGrid">
+            <div class="no-data" style="grid-column:1/-1">Waiting for data...</div>
+          </div>
+        </div>
+ 
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title">Alerts</span>
+            <span class="card-badge" id="alertBadge" style="color:var(--accent3);border-color:rgba(255,107,53,0.3);background:rgba(255,107,53,0.1)">—</span>
+          </div>
+          <div class="alert-list" id="alertList">
+            <div class="no-data">Waiting for data...</div>
+          </div>
+        </div>
+ 
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title" id="metricsTitle">Select a device above</span>
+            <span class="card-badge">METRICS</span>
+          </div>
+          <div class="metrics-list" id="metricsList">
+            <div class="no-data">Click a device to see its metrics</div>
+          </div>
+        </div>
+ 
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title">Live Events</span>
+            <span class="card-badge">TIMELINE</span>
+          </div>
+          <div class="timeline" id="timeline">
+            <div class="no-data">Waiting for data...</div>
+          </div>
+        </div>
+ 
       </div>
     </div>
- 
-    <div class="card">
-      <div class="card-header">
-        <span class="card-title">Alerts</span>
-        <span class="card-badge" id="alertBadge" style="color:var(--accent3);border-color:rgba(255,107,53,0.3);background:rgba(255,107,53,0.1)">—</span>
-      </div>
-      <div class="alert-list" id="alertList">
-        <div class="no-data">Waiting for data...</div>
-      </div>
-    </div>
- 
-    <div class="card">
-      <div class="card-header">
-        <span class="card-title" id="metricsTitle">Select a device above</span>
-        <span class="card-badge">METRICS</span>
-      </div>
-      <div class="metrics-list" id="metricsList">
-        <div class="no-data">Click a device to see its metrics</div>
-      </div>
-    </div>
- 
-    <div class="card">
-      <div class="card-header">
-        <span class="card-title">Live Events</span>
-        <span class="card-badge">TIMELINE</span>
-      </div>
-      <div class="timeline" id="timeline">
-        <div class="no-data">Waiting for data...</div>
-      </div>
-    </div>
- 
   </div>
-</div>
  
 <script>
 let interval = null;
 let totalMessages = 0;
 let selectedDevice = null;
-let allData = [];
+let apiUrl = '', tenantId = '', apiKey = '';
  
 const ALERT_KEYS = ['DALI_Bus_Error', 'Watchdog_Event', 'PowerUp_Event'];
 const DEVICE_COLORS = {
-  'WB_MSW_A': '#00d4ff',
-  'WB_MSW_B': '#00d4ff',
-  'Eastrone_Quadro': '#f59e0b',
-  'SENECA_test_Quadro': '#a855f7',
-  'Resi_dali_SIO_QuadroG': '#00ff9d',
-  'Dat3130_QuadroC': '#ff6b35'
+  'WB_MSW_A': '#00d4ff', 'WB_MSW_B': '#00d4ff',
+  'Eastrone_Quadro': '#f59e0b', 'SENECA_test_Quadro': '#a855f7',
+  'Resi_dali_SIO_QuadroG': '#00ff9d', 'Dat3130_QuadroC': '#ff6b35'
 };
  
-function startFetching() {
-  const url = document.getElementById('apiUrl').value.trim();
-  if (!url) { alert('Please enter the Azure Function URL'); return; }
-  if (interval) clearInterval(interval);
-  fetchData(url);
-  interval = setInterval(() => fetchData(url), 10000);
+async function doLogin() {
+  const url = document.getElementById('loginUrl').value.trim();
+  const tenant = document.getElementById('loginTenant').value.trim();
+  const key = document.getElementById('loginKey').value.trim();
+ 
+  if (!url || !tenant || !key) {
+    showLoginError('Please fill in all fields.');
+    return;
+  }
+ 
+  try {
+    const testUrl = `${url}?tenantId=${encodeURIComponent(tenant)}&apiKey=${encodeURIComponent(key)}`;
+    const res = await fetch(testUrl);
+ 
+    if (res.status === 401 || res.status === 403) {
+      showLoginError('Invalid Tenant ID or API Key.');
+      return;
+    }
+ 
+    if (!res.ok) {
+      showLoginError(`Connection failed: HTTP ${res.status}`);
+      return;
+    }
+ 
+    apiUrl = url;
+    tenantId = tenant;
+    apiKey = key;
+ 
+    document.getElementById('loginPage').style.display = 'none';
+    document.getElementById('dashboard').classList.add('show');
+    startFetching();
+ 
+  } catch (err) {
+    showLoginError('Cannot connect. Check the URL and try again.');
+  }
 }
  
-function stopFetching() {
+function showLoginError(msg) {
+  const el = document.getElementById('loginError');
+  el.textContent = msg;
+  el.classList.add('show');
+}
+ 
+function doLogout() {
   if (interval) { clearInterval(interval); interval = null; }
-  setStatus('loading', 'Stopped');
+  totalMessages = 0;
+  selectedDevice = null;
+  document.getElementById('dashboard').classList.remove('show');
+  document.getElementById('loginPage').style.display = 'flex';
+  document.getElementById('loginError').classList.remove('show');
+}
+ 
+function startFetching() {
+  fetchData();
+  interval = setInterval(fetchData, 10000);
 }
  
 function setStatus(type, text) {
@@ -383,34 +485,30 @@ function setStatus(type, text) {
   document.getElementById('statusText').textContent = text;
 }
  
-async function fetchData(url) {
+async function fetchData() {
   try {
     setStatus('loading', 'Fetching...');
+    const url = `${apiUrl}?tenantId=${encodeURIComponent(tenantId)}&apiKey=${encodeURIComponent(apiKey)}`;
     const res = await fetch(url);
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    if (res.status === 401 || res.status === 403) { setStatus('error', 'Auth Error'); return; }
     const json = await res.json();
-    allData = json.data || [];
-    totalMessages += allData.length;
-    processData(allData);
+    const data = json.data || [];
+    totalMessages += data.length;
+    processData(data, json);
     setStatus('live', 'LIVE');
-    document.getElementById('lastUpdate').textContent =
-      'Last update: ' + new Date().toLocaleTimeString();
+    document.getElementById('lastUpdate').textContent = 'Updated: ' + new Date().toLocaleTimeString();
   } catch (err) {
     setStatus('error', 'Error');
-    console.error(err);
   }
 }
  
-function processData(data) {
+function processData(data, json) {
   if (!data.length) return;
  
-  const sample = data[0];
   document.getElementById('gatewayInfo').textContent =
-    `${sample.gatewayId} / ${sample.tenantId} / ${sample.protocol}`;
+    `${json.gateway || 'unknown'} / ${tenantId} / ${json.protocol || 'unknown'}`;
  
-  const devices = {};
-  const metrics = {};
-  const alerts = [];
+  const devices = {}, metrics = {}, alerts = [];
  
   data.forEach(msg => {
     const dev = msg.deviceId;
@@ -420,9 +518,7 @@ function processData(data) {
     const key = Object.keys(msg.metrics)[0];
     const val = msg.metrics[key];
     metrics[dev][key] = val;
-    if (ALERT_KEYS.includes(key) && val === true) {
-      alerts.push({ device: dev, key, time: msg.timestamp });
-    }
+    if (ALERT_KEYS.includes(key) && val === true) alerts.push({ device: dev, key, time: msg.timestamp });
   });
  
   document.getElementById('statDevices').textContent = Object.keys(devices).length;
@@ -436,16 +532,13 @@ function processData(data) {
   renderDeviceGrid(devices, metrics);
   renderAlerts(alerts);
   renderTimeline(data);
- 
-  if (selectedDevice && metrics[selectedDevice]) {
-    renderMetrics(selectedDevice, metrics[selectedDevice]);
-  }
+  if (selectedDevice && metrics[selectedDevice]) renderMetrics(selectedDevice, metrics[selectedDevice]);
 }
  
 function renderDeviceGrid(devices, metrics) {
   const grid = document.getElementById('deviceGrid');
   grid.innerHTML = '';
-  Object.entries(devices).forEach(([dev, count]) => {
+  Object.entries(devices).forEach(([dev]) => {
     const color = DEVICE_COLORS[dev] || '#00d4ff';
     const shortName = dev.replace('_Quadro', '').replace('_test', '');
     const div = document.createElement('div');
@@ -469,14 +562,10 @@ function renderMetrics(deviceId, metricsObj) {
   document.getElementById('metricsTitle').textContent = deviceId;
   const list = document.getElementById('metricsList');
   list.innerHTML = '';
-  if (!Object.keys(metricsObj).length) {
-    list.innerHTML = '<div class="no-data">No metrics available</div>';
-    return;
-  }
+  if (!Object.keys(metricsObj).length) { list.innerHTML = '<div class="no-data">No metrics</div>'; return; }
   Object.entries(metricsObj).forEach(([key, val]) => {
     const isAlert = ALERT_KEYS.includes(key) && val === true;
-    let cls = 'num';
-    let display = val;
+    let cls = 'num', display = val;
     if (typeof val === 'boolean') {
       cls = val ? (isAlert ? 'alert' : 'bool-true') : 'bool-false';
       display = val ? (isAlert ? 'TRUE ⚠️' : 'TRUE ✓') : 'FALSE';
@@ -493,21 +582,15 @@ function renderMetrics(deviceId, metricsObj) {
 function renderAlerts(alerts) {
   const list = document.getElementById('alertList');
   document.getElementById('alertBadge').textContent = `${alerts.length} ALERT`;
-  if (!alerts.length) {
-    list.innerHTML = '<div class="no-data" style="color:var(--accent2)">✓ No active alerts</div>';
-    return;
-  }
+  if (!alerts.length) { list.innerHTML = '<div class="no-data" style="color:var(--accent2)">✓ No active alerts</div>'; return; }
   list.innerHTML = '';
   alerts.forEach(a => {
-    const time = new Date(a.time).toLocaleTimeString();
     const div = document.createElement('div');
     div.className = 'alert-item warn';
     div.innerHTML = `
       <span class="alert-icon">⚠️</span>
-      <div>
-        <div class="alert-text">${a.key} = true</div>
-        <div class="alert-sub">${a.device} — ${time}</div>
-      </div>
+      <div><div class="alert-text">${a.key} = true</div>
+      <div class="alert-sub">${a.device} — ${new Date(a.time).toLocaleTimeString()}</div></div>
     `;
     list.appendChild(div);
   });
@@ -516,11 +599,9 @@ function renderAlerts(alerts) {
 function renderTimeline(data) {
   const tl = document.getElementById('timeline');
   tl.innerHTML = '';
-  const recent = [...data].reverse().slice(0, 15);
-  recent.forEach(msg => {
+  [...data].reverse().slice(0, 15).forEach(msg => {
     const key = Object.keys(msg.metrics)[0];
     const val = msg.metrics[key];
-    const time = new Date(msg.timestamp).toLocaleTimeString();
     const color = DEVICE_COLORS[msg.deviceId] || '#00d4ff';
     const isAlert = ALERT_KEYS.includes(key) && val === true;
     let valDisplay = typeof val === 'boolean'
@@ -529,17 +610,17 @@ function renderTimeline(data) {
     const item = document.createElement('div');
     item.className = 'tl-item';
     item.innerHTML = `
-      <div class="tl-time">${time}</div>
+      <div class="tl-time">${new Date(msg.timestamp).toLocaleTimeString()}</div>
       <div class="tl-dot" style="background:${isAlert ? 'var(--accent3)' : color}"></div>
-      <div class="tl-content">
-        ${key} = ${valDisplay}
-        <div class="tl-device">${msg.deviceId}</div>
-      </div>
+      <div class="tl-content">${key} = ${valDisplay}<div class="tl-device">${msg.deviceId}</div></div>
     `;
     tl.appendChild(item);
   });
 }
+ 
+document.addEventListener('keydown', e => {
+  if (e.key === 'Enter' && document.getElementById('loginPage').style.display !== 'none') doLogin();
+});
 </script>
 </body>
 </html>
- 
