@@ -4,6 +4,8 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>IoT Edge Dashboard — Live</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/chartjs-adapter-date-fns/3.0.0/chartjs-adapter-date-fns.bundle.min.js"></script>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&display=swap');
  
@@ -22,270 +24,90 @@
   }
  
   * { margin: 0; padding: 0; box-sizing: border-box; }
- 
-  body {
-    background: var(--bg);
-    color: var(--text);
-    font-family: 'IBM Plex Mono', monospace;
-    min-height: 100vh;
-  }
+  body { background: var(--bg); color: var(--text); font-family: 'IBM Plex Mono', monospace; min-height: 100vh; }
  
   body::before {
-    content: '';
-    position: fixed;
-    inset: 0;
-    background-image:
-      linear-gradient(rgba(0,212,255,0.03) 1px, transparent 1px),
-      linear-gradient(90deg, rgba(0,212,255,0.03) 1px, transparent 1px);
-    background-size: 40px 40px;
-    pointer-events: none;
-    z-index: 0;
+    content: ''; position: fixed; inset: 0;
+    background-image: linear-gradient(rgba(0,212,255,0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(0,212,255,0.03) 1px, transparent 1px);
+    background-size: 40px 40px; pointer-events: none; z-index: 0;
   }
  
   /* LOGIN */
-  .login-page {
-    position: fixed;
-    inset: 0;
-    z-index: 100;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: var(--bg);
-  }
- 
-  .login-box {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 16px;
-    padding: 40px;
-    width: 420px;
-    position: relative;
-    overflow: hidden;
-  }
- 
-  .login-box::before {
-    content: '';
-    position: absolute;
-    top: 0; left: 0; right: 0;
-    height: 3px;
-    background: linear-gradient(90deg, var(--accent), var(--accent4));
-  }
- 
+  .login-page { position: fixed; inset: 0; z-index: 100; display: flex; align-items: center; justify-content: center; background: var(--bg); }
+  .login-box { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 40px; width: 420px; position: relative; overflow: hidden; }
+  .login-box::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px; background: linear-gradient(90deg, var(--accent), var(--accent4)); }
   .login-logo { text-align: center; margin-bottom: 32px; }
   .login-logo h1 { font-size: 18px; color: var(--accent); letter-spacing: 3px; text-transform: uppercase; margin-bottom: 6px; }
   .login-logo p { font-size: 12px; color: var(--text-dim); }
- 
   .login-field { margin-bottom: 20px; }
   .login-label { font-size: 11px; color: var(--text-dim); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px; display: block; }
- 
-  .login-input {
-    width: 100%;
-    background: var(--bg);
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    padding: 12px 16px;
-    color: var(--text);
-    font-family: 'IBM Plex Mono', monospace;
-    font-size: 14px;
-    outline: none;
-    transition: border-color 0.2s;
-  }
- 
+  .login-input { width: 100%; background: var(--bg); border: 1px solid var(--border); border-radius: 8px; padding: 12px 16px; color: var(--text); font-family: 'IBM Plex Mono', monospace; font-size: 14px; outline: none; transition: border-color 0.2s; }
   .login-input:focus { border-color: var(--accent); }
- 
-  .login-btn {
-    width: 100%;
-    padding: 14px;
-    background: var(--accent);
-    color: var(--bg);
-    border: none;
-    border-radius: 8px;
-    font-family: 'IBM Plex Mono', monospace;
-    font-size: 14px;
-    font-weight: 600;
-    cursor: pointer;
-    transition: opacity 0.2s;
-    margin-top: 8px;
-    letter-spacing: 1px;
-  }
- 
+  .login-btn { width: 100%; padding: 14px; background: var(--accent); color: var(--bg); border: none; border-radius: 8px; font-family: 'IBM Plex Mono', monospace; font-size: 14px; font-weight: 600; cursor: pointer; margin-top: 8px; letter-spacing: 1px; }
   .login-btn:hover { opacity: 0.85; }
- 
-  .login-error {
-    background: rgba(255,107,53,0.1);
-    border: 1px solid rgba(255,107,53,0.3);
-    border-radius: 8px;
-    padding: 12px 16px;
-    font-size: 13px;
-    color: var(--accent3);
-    margin-top: 16px;
-    display: none;
-  }
- 
+  .login-error { background: rgba(255,107,53,0.1); border: 1px solid rgba(255,107,53,0.3); border-radius: 8px; padding: 12px 16px; font-size: 13px; color: var(--accent3); margin-top: 16px; display: none; }
   .login-error.show { display: block; }
  
   /* DASHBOARD */
   .dashboard { display: none; }
   .dashboard.show { display: block; }
- 
   .container { position: relative; z-index: 1; padding: 24px; max-width: 1400px; margin: 0 auto; }
  
-  header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    margin-bottom: 24px;
-    padding-bottom: 20px;
-    border-bottom: 1px solid var(--border);
-  }
- 
+  header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 24px; padding-bottom: 20px; border-bottom: 1px solid var(--border); }
   .header-left h1 { font-size: 20px; color: var(--accent); letter-spacing: 2px; text-transform: uppercase; }
   .header-left p { font-size: 12px; color: var(--text-dim); margin-top: 4px; }
   .header-right { display: flex; align-items: center; gap: 12px; }
  
-  .status-pill {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    padding: 8px 16px;
-    border-radius: 100px;
-    font-size: 12px;
-    border: 1px solid;
-  }
- 
+  .status-pill { display: flex; align-items: center; gap: 8px; padding: 8px 16px; border-radius: 100px; font-size: 12px; border: 1px solid; }
   .status-pill.live { background: rgba(0,255,157,0.1); border-color: rgba(0,255,157,0.3); color: var(--accent2); }
   .status-pill.loading { background: rgba(245,158,11,0.1); border-color: rgba(245,158,11,0.3); color: var(--accent5); }
   .status-pill.error { background: rgba(255,107,53,0.1); border-color: rgba(255,107,53,0.3); color: var(--accent3); }
- 
   .pulse { width: 8px; height: 8px; border-radius: 50%; animation: pulse 2s infinite; }
-  .live .pulse { background: var(--accent2); }
-  .loading .pulse { background: var(--accent5); }
-  .error .pulse { background: var(--accent3); animation: none; }
+  .live .pulse { background: var(--accent2); } .loading .pulse { background: var(--accent5); } .error .pulse { background: var(--accent3); animation: none; }
+  @keyframes pulse { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.4; transform: scale(0.7); } }
  
-  @keyframes pulse {
-    0%, 100% { opacity: 1; transform: scale(1); }
-    50% { opacity: 0.4; transform: scale(0.7); }
-  }
- 
-  .logout-btn {
-    padding: 7px 16px;
-    border-radius: 6px;
-    border: 1px solid var(--border);
-    background: transparent;
-    color: var(--text-dim);
-    font-family: 'IBM Plex Mono', monospace;
-    font-size: 12px;
-    cursor: pointer;
-    transition: all 0.2s;
-  }
- 
+  .logout-btn { padding: 7px 16px; border-radius: 6px; border: 1px solid var(--border); background: transparent; color: var(--text-dim); font-family: 'IBM Plex Mono', monospace; font-size: 12px; cursor: pointer; transition: all 0.2s; }
   .logout-btn:hover { border-color: var(--accent3); color: var(--accent3); }
   .last-update { font-size: 11px; color: var(--text-dim); }
  
   .stats-row { display: grid; grid-template-columns: repeat(5, 1fr); gap: 14px; margin-bottom: 24px; }
- 
-  .stat-card {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 10px;
-    padding: 16px 20px;
-    position: relative;
-    overflow: hidden;
-  }
- 
+  .stat-card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 16px 20px; position: relative; overflow: hidden; }
   .stat-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px; }
-  .stat-card.blue::before { background: var(--accent); }
-  .stat-card.green::before { background: var(--accent2); }
-  .stat-card.orange::before { background: var(--accent3); }
-  .stat-card.purple::before { background: var(--accent4); }
+  .stat-card.blue::before { background: var(--accent); } .stat-card.green::before { background: var(--accent2); }
+  .stat-card.orange::before { background: var(--accent3); } .stat-card.purple::before { background: var(--accent4); }
   .stat-card.yellow::before { background: var(--accent5); }
- 
   .stat-label { font-size: 11px; color: var(--text-dim); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 6px; }
   .stat-value { font-size: 28px; font-weight: 600; }
-  .stat-card.blue .stat-value { color: var(--accent); }
-  .stat-card.green .stat-value { color: var(--accent2); }
-  .stat-card.orange .stat-value { color: var(--accent3); }
-  .stat-card.purple .stat-value { color: var(--accent4); }
+  .stat-card.blue .stat-value { color: var(--accent); } .stat-card.green .stat-value { color: var(--accent2); }
+  .stat-card.orange .stat-value { color: var(--accent3); } .stat-card.purple .stat-value { color: var(--accent4); }
   .stat-card.yellow .stat-value { color: var(--accent5); }
  
-  .main-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+  .main-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; margin-bottom: 24px; }
   .card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
- 
-  .card-header {
-    padding: 14px 18px;
-    border-bottom: 1px solid var(--border);
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-  }
- 
+  .card.full { grid-column: 1 / -1; }
+  .card-header { padding: 14px 18px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; }
   .card-title { font-size: 12px; color: var(--text-dim); text-transform: uppercase; letter-spacing: 1px; }
- 
-  .card-badge {
-    font-size: 11px;
-    padding: 3px 10px;
-    border-radius: 100px;
-    background: rgba(0,212,255,0.1);
-    color: var(--accent);
-    border: 1px solid rgba(0,212,255,0.2);
-  }
+  .card-badge { font-size: 11px; padding: 3px 10px; border-radius: 100px; background: rgba(0,212,255,0.1); color: var(--accent); border: 1px solid rgba(0,212,255,0.2); }
  
   .device-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; padding: 14px; }
- 
-  .device-item {
-    background: var(--surface2);
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    padding: 12px;
-    cursor: pointer;
-    transition: all 0.2s;
-  }
- 
-  .device-item:hover { border-color: var(--accent); }
-  .device-item.active { border-color: var(--accent); background: rgba(0,212,255,0.05); }
- 
+  .device-item { background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; padding: 12px; cursor: pointer; transition: all 0.2s; }
+  .device-item:hover { border-color: var(--accent); } .device-item.active { border-color: var(--accent); background: rgba(0,212,255,0.05); }
   .device-name { font-size: 11px; color: var(--text); margin-bottom: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .device-count { font-size: 22px; font-weight: 600; }
-  .device-sub { font-size: 10px; color: var(--text-dim); }
+  .device-count { font-size: 22px; font-weight: 600; } .device-sub { font-size: 10px; color: var(--text-dim); }
   .device-dot { width: 5px; height: 5px; border-radius: 50%; display: inline-block; margin-left: 5px; animation: pulse 2s infinite; }
  
   .metrics-list { padding: 4px 0; max-height: 320px; overflow-y: auto; }
-  .metrics-list::-webkit-scrollbar { width: 4px; }
-  .metrics-list::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
- 
-  .metric-row {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 10px 18px;
-    border-bottom: 1px solid var(--border);
-    transition: background 0.15s;
-  }
- 
-  .metric-row:last-child { border-bottom: none; }
-  .metric-row:hover { background: var(--surface2); }
-  .metric-name { font-size: 12px; color: var(--text-dim); }
-  .metric-val { font-size: 14px; font-weight: 600; }
-  .metric-val.num { color: var(--accent); }
-  .metric-val.bool-true { color: var(--accent2); }
-  .metric-val.bool-false { color: var(--text-dim); }
-  .metric-val.alert { color: var(--accent3); }
+  .metrics-list::-webkit-scrollbar { width: 4px; } .metrics-list::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+  .metric-row { display: flex; align-items: center; justify-content: space-between; padding: 10px 18px; border-bottom: 1px solid var(--border); transition: background 0.15s; }
+  .metric-row:last-child { border-bottom: none; } .metric-row:hover { background: var(--surface2); }
+  .metric-name { font-size: 12px; color: var(--text-dim); } .metric-val { font-size: 14px; font-weight: 600; }
+  .metric-val.num { color: var(--accent); } .metric-val.bool-true { color: var(--accent2); }
+  .metric-val.bool-false { color: var(--text-dim); } .metric-val.alert { color: var(--accent3); }
  
   .alert-list { padding: 12px; }
- 
-  .alert-item {
-    display: flex;
-    align-items: flex-start;
-    gap: 12px;
-    padding: 12px 14px;
-    border-radius: 8px;
-    margin-bottom: 10px;
-  }
- 
+  .alert-item { display: flex; align-items: flex-start; gap: 12px; padding: 12px 14px; border-radius: 8px; margin-bottom: 10px; }
   .alert-item.warn { background: rgba(255,107,53,0.1); border: 1px solid rgba(255,107,53,0.3); }
-  .alert-icon { font-size: 16px; }
-  .alert-text { font-size: 13px; }
-  .alert-item.warn .alert-text { color: var(--accent3); }
+  .alert-text { font-size: 13px; } .alert-item.warn .alert-text { color: var(--accent3); }
   .alert-sub { font-size: 10px; color: var(--text-dim); margin-top: 3px; }
  
   .timeline { padding: 14px 18px; max-height: 300px; overflow-y: auto; }
@@ -297,9 +119,31 @@
  
   .no-data { text-align: center; padding: 40px 20px; color: var(--text-dim); font-size: 13px; }
  
+  /* WARM SECTION */
+  .section-divider { display: flex; align-items: center; gap: 16px; margin: 32px 0 20px; }
+  .section-divider-line { flex: 1; height: 1px; background: var(--border); }
+  .section-divider-label { font-size: 12px; color: var(--accent4); text-transform: uppercase; letter-spacing: 2px; padding: 6px 16px; border: 1px solid rgba(168,85,247,0.3); border-radius: 100px; background: rgba(168,85,247,0.05); }
+ 
+  .warm-info { font-size: 11px; color: var(--text-dim); margin-bottom: 20px; }
+ 
+  .charts-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; margin-bottom: 24px; }
+  .chart-card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
+  .chart-wrapper { padding: 16px; height: 200px; position: relative; }
+ 
+  .warm-timeline { padding: 14px 18px; max-height: 380px; overflow-y: auto; }
+  .warm-tl-item { display: flex; gap: 10px; margin-bottom: 8px; align-items: center; padding: 8px 12px; border-radius: 6px; background: var(--surface2); border: 1px solid var(--border); transition: border-color 0.15s; }
+  .warm-tl-item:hover { border-color: var(--accent4); }
+  .warm-tl-time { font-size: 10px; color: var(--text-dim); width: 85px; flex-shrink: 0; }
+  .warm-tl-device { font-size: 11px; width: 100px; flex-shrink: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .warm-tl-key { font-size: 11px; color: var(--text-dim); flex: 1; }
+  .warm-tl-val { font-size: 12px; font-weight: 600; color: var(--accent); flex-shrink: 0; }
+ 
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .spin { display: inline-block; width: 16px; height: 16px; border: 2px solid var(--border); border-top-color: var(--accent4); border-radius: 50%; animation: spin 1s linear infinite; margin-right: 8px; vertical-align: middle; }
+ 
   @media (max-width: 768px) {
     .stats-row { grid-template-columns: repeat(2, 1fr); }
-    .main-grid { grid-template-columns: 1fr; }
+    .main-grid, .charts-grid { grid-template-columns: 1fr; }
     .device-grid { grid-template-columns: repeat(2, 1fr); }
     .login-box { width: 90%; padding: 28px 24px; }
   }
@@ -307,176 +151,193 @@
 </head>
 <body>
  
-  <!-- LOGIN PAGE -->
-  <div class="login-page" id="loginPage">
-    <div class="login-box">
-      <div class="login-logo">
-        <h1>Edge Forwarder</h1>
-        <p>IoT Live Dashboard — Secure Access</p>
-      </div>
- 
-      <div class="login-field">
-        <label class="login-label">Function URL</label>
-        <input class="login-input" id="loginUrl" type="text"
-          placeholder="https://func-xxx.azurewebsites.net/api/GetLatestData" />
-      </div>
- 
-      <div class="login-field">
-        <label class="login-label">Tenant ID</label>
-        <input class="login-input" id="loginTenant" type="text" placeholder="tenant-test" />
-      </div>
- 
-      <div class="login-field">
-        <label class="login-label">API Key</label>
-        <input class="login-input" id="loginKey" type="password" placeholder="Your API key" />
-      </div>
- 
-      <button class="login-btn" onclick="doLogin()">▶ Connect</button>
-      <div class="login-error" id="loginError">Invalid credentials. Please try again.</div>
+<!-- LOGIN -->
+<div class="login-page" id="loginPage">
+  <div class="login-box">
+    <div class="login-logo">
+      <h1>Edge Forwarder</h1>
+      <p>IoT Live Dashboard — Secure Access</p>
     </div>
+    <div class="login-field">
+      <label class="login-label">Function URL</label>
+      <input class="login-input" id="loginUrl" type="text" placeholder="https://func-xxx.azurewebsites.net/api/GetLatestData" />
+    </div>
+    <div class="login-field">
+      <label class="login-label">Tenant ID</label>
+      <input class="login-input" id="loginTenant" type="text" placeholder="tenant-test" />
+    </div>
+    <div class="login-field">
+      <label class="login-label">API Key</label>
+      <input class="login-input" id="loginKey" type="password" placeholder="Your API key" />
+    </div>
+    <button class="login-btn" onclick="doLogin()">▶ Connect</button>
+    <div class="login-error" id="loginError">Invalid credentials. Please try again.</div>
   </div>
+</div>
  
-  <!-- DASHBOARD -->
-  <div class="dashboard" id="dashboard">
-    <div class="container">
+<!-- DASHBOARD -->
+<div class="dashboard" id="dashboard">
+  <div class="container">
  
-      <header>
-        <div class="header-left">
-          <h1>Edge Forwarder Dashboard</h1>
-          <p id="gatewayInfo">Connecting...</p>
-        </div>
-        <div class="header-right">
-          <span class="last-update" id="lastUpdate">—</span>
-          <div class="status-pill loading" id="statusPill">
-            <span class="pulse"></span>
-            <span id="statusText">Connecting</span>
-          </div>
-          <button class="logout-btn" onclick="doLogout()">⏏ Logout</button>
-        </div>
-      </header>
- 
-      <div class="stats-row">
-        <div class="stat-card blue"><div class="stat-label">Devices</div><div class="stat-value" id="statDevices">—</div></div>
-        <div class="stat-card green"><div class="stat-label">Messages</div><div class="stat-value" id="statMessages">—</div></div>
-        <div class="stat-card orange"><div class="stat-label">Alerts</div><div class="stat-value" id="statAlerts">—</div></div>
-        <div class="stat-card purple"><div class="stat-label">Metrics</div><div class="stat-value" id="statMetrics">—</div></div>
-        <div class="stat-card yellow"><div class="stat-label">Data Quality</div><div class="stat-value" id="statQuality">—</div></div>
+    <header>
+      <div class="header-left">
+        <h1>Edge Forwarder Dashboard</h1>
+        <p id="gatewayInfo">Connecting...</p>
       </div>
- 
-      <div class="main-grid">
- 
-        <div class="card">
-          <div class="card-header">
-            <span class="card-title">Device Status</span>
-            <span class="card-badge" id="deviceBadge">—</span>
-          </div>
-          <div class="device-grid" id="deviceGrid">
-            <div class="no-data" style="grid-column:1/-1">Waiting for data...</div>
-          </div>
+      <div class="header-right">
+        <span class="last-update" id="lastUpdate">—</span>
+        <div class="status-pill loading" id="statusPill">
+          <span class="pulse"></span>
+          <span id="statusText">Connecting</span>
         </div>
+        <button class="logout-btn" onclick="doLogout()">⏏ Logout</button>
+      </div>
+    </header>
  
-        <div class="card">
-          <div class="card-header">
-            <span class="card-title">Alerts</span>
-            <span class="card-badge" id="alertBadge" style="color:var(--accent3);border-color:rgba(255,107,53,0.3);background:rgba(255,107,53,0.1)">—</span>
-          </div>
-          <div class="alert-list" id="alertList">
-            <div class="no-data">Waiting for data...</div>
-          </div>
-        </div>
+    <div class="stats-row">
+      <div class="stat-card blue"><div class="stat-label">Devices</div><div class="stat-value" id="statDevices">—</div></div>
+      <div class="stat-card green"><div class="stat-label">Messages</div><div class="stat-value" id="statMessages">—</div></div>
+      <div class="stat-card orange"><div class="stat-label">Alerts</div><div class="stat-value" id="statAlerts">—</div></div>
+      <div class="stat-card purple"><div class="stat-label">Metrics</div><div class="stat-value" id="statMetrics">—</div></div>
+      <div class="stat-card yellow"><div class="stat-label">Data Quality</div><div class="stat-value" id="statQuality">—</div></div>
+    </div>
  
-        <div class="card">
-          <div class="card-header">
-            <span class="card-title" id="metricsTitle">Select a device above</span>
-            <span class="card-badge">METRICS</span>
-          </div>
-          <div class="metrics-list" id="metricsList">
-            <div class="no-data">Click a device to see its metrics</div>
-          </div>
-        </div>
- 
-        <div class="card">
-          <div class="card-header">
-            <span class="card-title">Live Events</span>
-            <span class="card-badge">TIMELINE</span>
-          </div>
-          <div class="timeline" id="timeline">
-            <div class="no-data">Waiting for data...</div>
-          </div>
-        </div>
- 
+    <div class="main-grid">
+      <div class="card">
+        <div class="card-header"><span class="card-title">Device Status</span><span class="card-badge" id="deviceBadge">—</span></div>
+        <div class="device-grid" id="deviceGrid"><div class="no-data" style="grid-column:1/-1">Waiting for data...</div></div>
+      </div>
+      <div class="card">
+        <div class="card-header"><span class="card-title">Alerts</span><span class="card-badge" id="alertBadge" style="color:var(--accent3);border-color:rgba(255,107,53,0.3);background:rgba(255,107,53,0.1)">—</span></div>
+        <div class="alert-list" id="alertList"><div class="no-data">Waiting for data...</div></div>
+      </div>
+      <div class="card">
+        <div class="card-header"><span class="card-title" id="metricsTitle">Select a device above</span><span class="card-badge">METRICS</span></div>
+        <div class="metrics-list" id="metricsList"><div class="no-data">Click a device to see its metrics</div></div>
+      </div>
+      <div class="card">
+        <div class="card-header"><span class="card-title">Live Events</span><span class="card-badge">REAL-TIME</span></div>
+        <div class="timeline" id="timeline"><div class="no-data">Waiting for data...</div></div>
       </div>
     </div>
+ 
+    <!-- WARM SECTION -->
+    <div class="section-divider">
+      <div class="section-divider-line"></div>
+      <div class="section-divider-label">📊 Last 24 Hours</div>
+      <div class="section-divider-line"></div>
+    </div>
+ 
+    <div class="warm-info" id="warmInfo"><span class="spin"></span>Loading 24-hour history...</div>
+ 
+    <div class="charts-grid">
+      <div class="chart-card">
+        <div class="card-header"><span class="card-title">Temperature</span><span class="card-badge" style="color:var(--accent3);border-color:rgba(255,107,53,0.2);background:rgba(255,107,53,0.05)">°C — WB_MSW_A</span></div>
+        <div class="chart-wrapper"><canvas id="chartTemp"></canvas></div>
+      </div>
+      <div class="chart-card">
+        <div class="card-header"><span class="card-title">Humidity</span><span class="card-badge">% — WB_MSW A/B</span></div>
+        <div class="chart-wrapper"><canvas id="chartHumidity"></canvas></div>
+      </div>
+      <div class="chart-card">
+        <div class="card-header"><span class="card-title">CO2 Level</span><span class="card-badge" style="color:var(--accent2);border-color:rgba(0,255,157,0.2);background:rgba(0,255,157,0.05)">ppm — WB_MSW A/B</span></div>
+        <div class="chart-wrapper"><canvas id="chartCO2"></canvas></div>
+      </div>
+      <div class="chart-card">
+        <div class="card-header"><span class="card-title">Voltage L3</span><span class="card-badge" style="color:var(--accent5);border-color:rgba(245,158,11,0.2);background:rgba(245,158,11,0.05)">V — Eastrone</span></div>
+        <div class="chart-wrapper"><canvas id="chartVoltage"></canvas></div>
+      </div>
+      <div class="chart-card">
+        <div class="card-header"><span class="card-title">VOC eCO2</span><span class="card-badge" style="color:var(--accent4);border-color:rgba(168,85,247,0.2);background:rgba(168,85,247,0.05)">ppm — WB_MSW A/B</span></div>
+        <div class="chart-wrapper"><canvas id="chartVOC"></canvas></div>
+      </div>
+      <div class="chart-card">
+        <div class="card-header"><span class="card-title">Noise Level</span><span class="card-badge">dB — WB_MSW_B</span></div>
+        <div class="chart-wrapper"><canvas id="chartNoise"></canvas></div>
+      </div>
+    </div>
+ 
+    <div class="card full" style="margin-bottom:32px">
+      <div class="card-header">
+        <span class="card-title">24-Hour Event Timeline</span>
+        <span class="card-badge" id="warmBadge" style="color:var(--accent4);border-color:rgba(168,85,247,0.3);background:rgba(168,85,247,0.1)">—</span>
+      </div>
+      <div class="warm-timeline" id="warmTimeline"><div class="no-data"><span class="spin"></span>Loading...</div></div>
+    </div>
+ 
   </div>
+</div>
  
 <script>
-let interval = null;
+let liveInterval = null;
+let warmInterval = null;
 let totalMessages = 0;
 let selectedDevice = null;
 let apiUrl = '', tenantId = '', apiKey = '';
+let charts = {};
  
 const ALERT_KEYS = ['DALI_Bus_Error', 'Watchdog_Event', 'PowerUp_Event'];
 const DEVICE_COLORS = {
-  'WB_MSW_A': '#00d4ff', 'WB_MSW_B': '#00d4ff',
+  'WB_MSW_A': '#00d4ff', 'WB_MSW_B': '#00bdff',
   'Eastrone_Quadro': '#f59e0b', 'SENECA_test_Quadro': '#a855f7',
   'Resi_dali_SIO_QuadroG': '#00ff9d', 'Dat3130_QuadroC': '#ff6b35'
 };
  
+const CHART_OPTIONS = {
+  responsive: true, maintainAspectRatio: false,
+  animation: { duration: 400 },
+  plugins: {
+    legend: { labels: { color: '#64748b', font: { family: 'IBM Plex Mono', size: 11 }, boxWidth: 12, padding: 12 } },
+    tooltip: { backgroundColor: '#111827', titleColor: '#e2e8f0', bodyColor: '#94a3b8', borderColor: '#1e2d45', borderWidth: 1 }
+  },
+  scales: {
+    x: {
+      type: 'time',
+      time: { unit: 'hour', displayFormats: { hour: 'HH:mm' } },
+      ticks: { color: '#64748b', font: { family: 'IBM Plex Mono', size: 10 }, maxTicksLimit: 8 },
+      grid: { color: '#1e2d45' }
+    },
+    y: {
+      ticks: { color: '#64748b', font: { family: 'IBM Plex Mono', size: 10 } },
+      grid: { color: '#1e2d45' }
+    }
+  }
+};
+ 
+// ═══ LOGIN ═══
 async function doLogin() {
   const url = document.getElementById('loginUrl').value.trim();
   const tenant = document.getElementById('loginTenant').value.trim();
   const key = document.getElementById('loginKey').value.trim();
- 
-  if (!url || !tenant || !key) {
-    showLoginError('Please fill in all fields.');
-    return;
-  }
- 
+  if (!url || !tenant || !key) { showLoginError('Please fill in all fields.'); return; }
   try {
-    const testUrl = `${url}?tenantId=${encodeURIComponent(tenant)}&apiKey=${encodeURIComponent(key)}`;
-    const res = await fetch(testUrl);
- 
-    if (res.status === 401 || res.status === 403) {
-      showLoginError('Invalid Tenant ID or API Key.');
-      return;
-    }
- 
-    if (!res.ok) {
-      showLoginError(`Connection failed: HTTP ${res.status}`);
-      return;
-    }
- 
-    apiUrl = url;
-    tenantId = tenant;
-    apiKey = key;
- 
+    const res = await fetch(`${url}?tenantId=${encodeURIComponent(tenant)}&apiKey=${encodeURIComponent(key)}`);
+    if (res.status === 401 || res.status === 403) { showLoginError('Invalid Tenant ID or API Key.'); return; }
+    if (!res.ok) { showLoginError(`Connection failed: HTTP ${res.status}`); return; }
+    apiUrl = url; tenantId = tenant; apiKey = key;
     document.getElementById('loginPage').style.display = 'none';
     document.getElementById('dashboard').classList.add('show');
-    startFetching();
- 
-  } catch (err) {
-    showLoginError('Cannot connect. Check the URL and try again.');
-  }
+    startAll();
+  } catch { showLoginError('Cannot connect. Check the URL and try again.'); }
 }
  
 function showLoginError(msg) {
   const el = document.getElementById('loginError');
-  el.textContent = msg;
-  el.classList.add('show');
+  el.textContent = msg; el.classList.add('show');
 }
  
 function doLogout() {
-  if (interval) { clearInterval(interval); interval = null; }
-  totalMessages = 0;
-  selectedDevice = null;
+  clearInterval(liveInterval); clearInterval(warmInterval);
+  liveInterval = warmInterval = null; totalMessages = 0; selectedDevice = null;
+  Object.values(charts).forEach(c => c.destroy()); charts = {};
   document.getElementById('dashboard').classList.remove('show');
   document.getElementById('loginPage').style.display = 'flex';
   document.getElementById('loginError').classList.remove('show');
 }
  
-function startFetching() {
-  fetchData();
-  interval = setInterval(fetchData, 10000);
+function startAll() {
+  fetchLive(); liveInterval = setInterval(fetchLive, 10000);
+  fetchWarm(); warmInterval = setInterval(fetchWarm, 60000);
 }
  
 function setStatus(type, text) {
@@ -485,96 +346,67 @@ function setStatus(type, text) {
   document.getElementById('statusText').textContent = text;
 }
  
-async function fetchData() {
+// ═══ LIVE ═══
+async function fetchLive() {
   try {
     setStatus('loading', 'Fetching...');
-    const url = `${apiUrl}?tenantId=${encodeURIComponent(tenantId)}&apiKey=${encodeURIComponent(apiKey)}`;
-    const res = await fetch(url);
+    const res = await fetch(`${apiUrl}?tenantId=${encodeURIComponent(tenantId)}&apiKey=${encodeURIComponent(apiKey)}`);
     if (res.status === 401 || res.status === 403) { setStatus('error', 'Auth Error'); return; }
     const json = await res.json();
-    const data = json.data || [];
-    totalMessages += data.length;
-    processData(data, json);
+    totalMessages += (json.data || []).length;
+    processLive(json.data || [], json);
     setStatus('live', 'LIVE');
     document.getElementById('lastUpdate').textContent = 'Updated: ' + new Date().toLocaleTimeString();
-  } catch (err) {
-    setStatus('error', 'Error');
-  }
+  } catch { setStatus('error', 'Error'); }
 }
  
-function processData(data, json) {
+function processLive(data, json) {
   if (!data.length) return;
- 
   document.getElementById('gatewayInfo').textContent =
     `${json.gateway || 'unknown'} / ${tenantId} / ${json.protocol || 'unknown'}`;
- 
   const devices = {}, metrics = {}, alerts = [];
- 
   data.forEach(msg => {
     const dev = msg.deviceId;
-    if (!devices[dev]) devices[dev] = 0;
-    devices[dev]++;
+    if (!devices[dev]) devices[dev] = 0; devices[dev]++;
     if (!metrics[dev]) metrics[dev] = {};
-    const key = Object.keys(msg.metrics)[0];
-    const val = msg.metrics[key];
-    metrics[dev][key] = val;
-    if (ALERT_KEYS.includes(key) && val === true) alerts.push({ device: dev, key, time: msg.timestamp });
+    const k = Object.keys(msg.metrics)[0], v = msg.metrics[k];
+    metrics[dev][k] = v;
+    if (ALERT_KEYS.includes(k) && v === true) alerts.push({ device: dev, key: k, time: msg.timestamp });
   });
- 
   document.getElementById('statDevices').textContent = Object.keys(devices).length;
   document.getElementById('statMessages').textContent = totalMessages;
   document.getElementById('statAlerts').textContent = alerts.length;
-  document.getElementById('statMetrics').textContent =
-    Object.values(metrics).reduce((s, m) => s + Object.keys(m).length, 0);
+  document.getElementById('statMetrics').textContent = Object.values(metrics).reduce((s, m) => s + Object.keys(m).length, 0);
   document.getElementById('statQuality').textContent = 'GOOD';
   document.getElementById('deviceBadge').textContent = `${Object.keys(devices).length} ONLINE`;
- 
-  renderDeviceGrid(devices, metrics);
-  renderAlerts(alerts);
-  renderTimeline(data);
+  renderDevices(devices, metrics); renderAlerts(alerts); renderTimeline(data);
   if (selectedDevice && metrics[selectedDevice]) renderMetrics(selectedDevice, metrics[selectedDevice]);
 }
  
-function renderDeviceGrid(devices, metrics) {
-  const grid = document.getElementById('deviceGrid');
-  grid.innerHTML = '';
-  Object.entries(devices).forEach(([dev]) => {
+function renderDevices(devices, metrics) {
+  const grid = document.getElementById('deviceGrid'); grid.innerHTML = '';
+  Object.keys(devices).forEach(dev => {
     const color = DEVICE_COLORS[dev] || '#00d4ff';
-    const shortName = dev.replace('_Quadro', '').replace('_test', '');
+    const shortName = dev.replace('_Quadro','').replace('_test','');
     const div = document.createElement('div');
     div.className = `device-item${selectedDevice === dev ? ' active' : ''}`;
-    div.innerHTML = `
-      <div class="device-name">${shortName} <span class="device-dot" style="background:${color}"></span></div>
-      <div class="device-count" style="color:${color}">${Object.keys(metrics[dev] || {}).length}</div>
-      <div class="device-sub">active metrics</div>
-    `;
-    div.onclick = () => {
-      selectedDevice = dev;
-      renderMetrics(dev, metrics[dev] || {});
-      document.querySelectorAll('.device-item').forEach(d => d.classList.remove('active'));
-      div.classList.add('active');
-    };
+    div.innerHTML = `<div class="device-name">${shortName} <span class="device-dot" style="background:${color}"></span></div><div class="device-count" style="color:${color}">${Object.keys(metrics[dev]||{}).length}</div><div class="device-sub">active metrics</div>`;
+    div.onclick = () => { selectedDevice = dev; renderMetrics(dev, metrics[dev]||{}); document.querySelectorAll('.device-item').forEach(d => d.classList.remove('active')); div.classList.add('active'); };
     grid.appendChild(div);
   });
 }
  
-function renderMetrics(deviceId, metricsObj) {
+function renderMetrics(deviceId, obj) {
   document.getElementById('metricsTitle').textContent = deviceId;
-  const list = document.getElementById('metricsList');
-  list.innerHTML = '';
-  if (!Object.keys(metricsObj).length) { list.innerHTML = '<div class="no-data">No metrics</div>'; return; }
-  Object.entries(metricsObj).forEach(([key, val]) => {
-    const isAlert = ALERT_KEYS.includes(key) && val === true;
-    let cls = 'num', display = val;
-    if (typeof val === 'boolean') {
-      cls = val ? (isAlert ? 'alert' : 'bool-true') : 'bool-false';
-      display = val ? (isAlert ? 'TRUE ⚠️' : 'TRUE ✓') : 'FALSE';
-    } else if (typeof val === 'number') {
-      display = Math.round(val * 1000) / 1000;
-    }
-    const row = document.createElement('div');
-    row.className = 'metric-row';
-    row.innerHTML = `<span class="metric-name">${key}</span><span class="metric-val ${cls}">${display}</span>`;
+  const list = document.getElementById('metricsList'); list.innerHTML = '';
+  if (!Object.keys(obj).length) { list.innerHTML = '<div class="no-data">No metrics</div>'; return; }
+  Object.entries(obj).forEach(([k, v]) => {
+    const isAlert = ALERT_KEYS.includes(k) && v === true;
+    let cls = 'num', display = v;
+    if (typeof v === 'boolean') { cls = v ? (isAlert ? 'alert' : 'bool-true') : 'bool-false'; display = v ? (isAlert ? 'TRUE ⚠️' : 'TRUE ✓') : 'FALSE'; }
+    else if (typeof v === 'number') display = Math.round(v * 1000) / 1000;
+    const row = document.createElement('div'); row.className = 'metric-row';
+    row.innerHTML = `<span class="metric-name">${k}</span><span class="metric-val ${cls}">${display}</span>`;
     list.appendChild(row);
   });
 }
@@ -585,35 +417,89 @@ function renderAlerts(alerts) {
   if (!alerts.length) { list.innerHTML = '<div class="no-data" style="color:var(--accent2)">✓ No active alerts</div>'; return; }
   list.innerHTML = '';
   alerts.forEach(a => {
-    const div = document.createElement('div');
-    div.className = 'alert-item warn';
-    div.innerHTML = `
-      <span class="alert-icon">⚠️</span>
-      <div><div class="alert-text">${a.key} = true</div>
-      <div class="alert-sub">${a.device} — ${new Date(a.time).toLocaleTimeString()}</div></div>
-    `;
+    const div = document.createElement('div'); div.className = 'alert-item warn';
+    div.innerHTML = `<span>⚠️</span><div><div class="alert-text">${a.key} = true</div><div class="alert-sub">${a.device} — ${new Date(a.time).toLocaleTimeString()}</div></div>`;
     list.appendChild(div);
   });
 }
  
 function renderTimeline(data) {
-  const tl = document.getElementById('timeline');
-  tl.innerHTML = '';
+  const tl = document.getElementById('timeline'); tl.innerHTML = '';
   [...data].reverse().slice(0, 15).forEach(msg => {
-    const key = Object.keys(msg.metrics)[0];
-    const val = msg.metrics[key];
+    const k = Object.keys(msg.metrics)[0], v = msg.metrics[k];
     const color = DEVICE_COLORS[msg.deviceId] || '#00d4ff';
-    const isAlert = ALERT_KEYS.includes(key) && val === true;
-    let valDisplay = typeof val === 'boolean'
-      ? `<span style="color:${val ? (isAlert ? 'var(--accent3)' : 'var(--accent2)') : 'var(--text-dim)'}">${val}</span>`
-      : `<span style="color:${color}">${Math.round(val * 1000) / 1000}</span>`;
-    const item = document.createElement('div');
-    item.className = 'tl-item';
-    item.innerHTML = `
-      <div class="tl-time">${new Date(msg.timestamp).toLocaleTimeString()}</div>
-      <div class="tl-dot" style="background:${isAlert ? 'var(--accent3)' : color}"></div>
-      <div class="tl-content">${key} = ${valDisplay}<div class="tl-device">${msg.deviceId}</div></div>
-    `;
+    const isAlert = ALERT_KEYS.includes(k) && v === true;
+    let vd = typeof v === 'boolean' ? `<span style="color:${v?(isAlert?'var(--accent3)':'var(--accent2)'):'var(--text-dim)'}">${v}</span>` : `<span style="color:${color}">${Math.round(v*1000)/1000}</span>`;
+    const item = document.createElement('div'); item.className = 'tl-item';
+    item.innerHTML = `<div class="tl-time">${new Date(msg.timestamp).toLocaleTimeString()}</div><div class="tl-dot" style="background:${isAlert?'var(--accent3)':color}"></div><div class="tl-content">${k} = ${vd}<div class="tl-device">${msg.deviceId}</div></div>`;
+    tl.appendChild(item);
+  });
+}
+ 
+// ═══ WARM ═══
+async function fetchWarm() {
+  try {
+    document.getElementById('warmInfo').innerHTML = '<span class="spin"></span>Loading 24-hour history...';
+    const res = await fetch(`${apiUrl}?tenantId=${encodeURIComponent(tenantId)}&apiKey=${encodeURIComponent(apiKey)}&mode=warm`);
+    if (!res.ok) { document.getElementById('warmInfo').innerHTML = `<span style="color:var(--accent3)">⚠ Warm data unavailable (HTTP ${res.status})</span>`; return; }
+    const json = await res.json();
+    const data = json.data || [];
+    const fromStr = json.from ? new Date(json.from).toLocaleString() : '—';
+    document.getElementById('warmInfo').innerHTML = `<span style="color:var(--accent2)">✓ ${data.length} events — from ${fromStr} to now</span>`;
+    renderCharts(data);
+    renderWarmTimeline(data);
+  } catch {
+    document.getElementById('warmInfo').innerHTML = '<span style="color:var(--text-dim)">Warm data not yet available — Table Storage may still be filling up</span>';
+  }
+}
+ 
+function series(data, deviceId, metricKey) {
+  return data.filter(m => m.deviceId === deviceId && m.metrics?.[metricKey] !== undefined)
+    .map(m => ({ x: new Date(m.timestamp), y: m.metrics[metricKey] }))
+    .sort((a, b) => a.x - b.x);
+}
+ 
+function makeChart(id, datasets) {
+  const ctx = document.getElementById(id); if (!ctx) return;
+  if (charts[id]) charts[id].destroy();
+  charts[id] = new Chart(ctx, { type: 'line', data: { datasets }, options: CHART_OPTIONS });
+}
+ 
+function renderCharts(data) {
+  makeChart('chartTemp', [{ label: 'WB_MSW_A', data: series(data,'WB_MSW_A','Temperature'), borderColor:'#ff6b35', backgroundColor:'rgba(255,107,53,0.08)', borderWidth:2, pointRadius:1, tension:0.3, fill:true }]);
+  makeChart('chartHumidity', [
+    { label: 'WB_MSW_A', data: series(data,'WB_MSW_A','Humidity'), borderColor:'#00d4ff', backgroundColor:'rgba(0,212,255,0.06)', borderWidth:2, pointRadius:1, tension:0.3, fill:true },
+    { label: 'WB_MSW_B', data: series(data,'WB_MSW_B','Humidity'), borderColor:'#a855f7', backgroundColor:'transparent', borderWidth:2, pointRadius:1, tension:0.3 }
+  ]);
+  makeChart('chartCO2', [
+    { label: 'WB_MSW_A', data: series(data,'WB_MSW_A','CO2_ppm'), borderColor:'#00ff9d', backgroundColor:'rgba(0,255,157,0.06)', borderWidth:2, pointRadius:1, tension:0.3, fill:true },
+    { label: 'WB_MSW_B', data: series(data,'WB_MSW_B','CO2_ppm'), borderColor:'#f59e0b', backgroundColor:'transparent', borderWidth:2, pointRadius:1, tension:0.3 }
+  ]);
+  makeChart('chartVoltage', [{ label: 'Voltage_L3', data: series(data,'Eastrone_Quadro','Voltage_L3'), borderColor:'#f59e0b', backgroundColor:'rgba(245,158,11,0.06)', borderWidth:2, pointRadius:1, tension:0.3, fill:true }]);
+  makeChart('chartVOC', [
+    { label: 'WB_MSW_A', data: series(data,'WB_MSW_A','VOC_eCO2'), borderColor:'#a855f7', backgroundColor:'rgba(168,85,247,0.06)', borderWidth:2, pointRadius:1, tension:0.3, fill:true },
+    { label: 'WB_MSW_B', data: series(data,'WB_MSW_B','VOC_eCO2'), borderColor:'#00d4ff', backgroundColor:'transparent', borderWidth:2, pointRadius:1, tension:0.3 }
+  ]);
+  makeChart('chartNoise', [{ label: 'WB_MSW_B', data: series(data,'WB_MSW_B','Noise_level'), borderColor:'#64748b', backgroundColor:'rgba(100,116,139,0.06)', borderWidth:2, pointRadius:1, tension:0.3, fill:true }]);
+}
+ 
+function renderWarmTimeline(data) {
+  const tl = document.getElementById('warmTimeline');
+  document.getElementById('warmBadge').textContent = `${data.length} EVENTS`;
+  if (!data.length) { tl.innerHTML = '<div class="no-data">No events yet — data will appear as Table Storage fills up</div>'; return; }
+  tl.innerHTML = '';
+  const SHOW_KEYS = ['Temperature','Humidity','CO2_ppm','VOC_eCO2','Illuminance_raw','Noise_level','Voltage_L3','Voltage_Avg_LL','Frequency','Air_quality'];
+  [...data].reverse().slice(0, 300).forEach(msg => {
+    if (!msg.metrics) return;
+    const k = Object.keys(msg.metrics)[0], v = msg.metrics[k];
+    if (!SHOW_KEYS.includes(k)) return;
+    const color = DEVICE_COLORS[msg.deviceId] || '#64748b';
+    const shortDev = (msg.deviceId||'').replace('_Quadro','').replace('_test','');
+    const t = new Date(msg.timestamp);
+    const timeStr = t.toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'}) + ' ' + t.toLocaleDateString([], {month:'short',day:'numeric'});
+    const valStr = typeof v === 'boolean' ? (v ? '<span style="color:var(--accent2)">TRUE</span>' : '<span style="color:var(--text-dim)">FALSE</span>') : `${Math.round(v*100)/100}`;
+    const item = document.createElement('div'); item.className = 'warm-tl-item';
+    item.innerHTML = `<div class="warm-tl-time">${timeStr}</div><div class="warm-tl-device" style="color:${color}">${shortDev}</div><div class="warm-tl-key">${k}</div><div class="warm-tl-val">${valStr}</div>`;
     tl.appendChild(item);
   });
 }
