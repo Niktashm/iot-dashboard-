@@ -4,11 +4,9 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>IoT Edge Dashboard — Live</title>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/chartjs-adapter-date-fns/3.0.0/chartjs-adapter-date-fns.bundle.min.js"></script>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&display=swap');
-
+ 
   :root {
     --bg: #0a0e1a;
     --surface: #111827;
@@ -22,16 +20,16 @@
     --text: #e2e8f0;
     --text-dim: #64748b;
   }
-
+ 
   * { margin: 0; padding: 0; box-sizing: border-box; }
   body { background: var(--bg); color: var(--text); font-family: 'IBM Plex Mono', monospace; min-height: 100vh; }
-
+ 
   body::before {
     content: ''; position: fixed; inset: 0;
     background-image: linear-gradient(rgba(0,212,255,0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(0,212,255,0.03) 1px, transparent 1px);
     background-size: 40px 40px; pointer-events: none; z-index: 0;
   }
-
+ 
   /* LOGIN */
   .login-page { position: fixed; inset: 0; z-index: 100; display: flex; align-items: center; justify-content: center; background: var(--bg); }
   .login-box { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 40px; width: 420px; position: relative; overflow: hidden; }
@@ -47,17 +45,17 @@
   .login-btn:hover { opacity: 0.85; }
   .login-error { background: rgba(255,107,53,0.1); border: 1px solid rgba(255,107,53,0.3); border-radius: 8px; padding: 12px 16px; font-size: 13px; color: var(--accent3); margin-top: 16px; display: none; }
   .login-error.show { display: block; }
-
+ 
   /* DASHBOARD */
   .dashboard { display: none; }
   .dashboard.show { display: block; }
   .container { position: relative; z-index: 1; padding: 24px; max-width: 1400px; margin: 0 auto; }
-
+ 
   header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 24px; padding-bottom: 20px; border-bottom: 1px solid var(--border); }
   .header-left h1 { font-size: 20px; color: var(--accent); letter-spacing: 2px; text-transform: uppercase; }
   .header-left p { font-size: 12px; color: var(--text-dim); margin-top: 4px; }
   .header-right { display: flex; align-items: center; gap: 12px; }
-
+ 
   .status-pill { display: flex; align-items: center; gap: 8px; padding: 8px 16px; border-radius: 100px; font-size: 12px; border: 1px solid; }
   .status-pill.live { background: rgba(0,255,157,0.1); border-color: rgba(0,255,157,0.3); color: var(--accent2); }
   .status-pill.loading { background: rgba(245,158,11,0.1); border-color: rgba(245,158,11,0.3); color: var(--accent5); }
@@ -65,11 +63,11 @@
   .pulse { width: 8px; height: 8px; border-radius: 50%; animation: pulse 2s infinite; }
   .live .pulse { background: var(--accent2); } .loading .pulse { background: var(--accent5); } .error .pulse { background: var(--accent3); animation: none; }
   @keyframes pulse { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.4; transform: scale(0.7); } }
-
+ 
   .logout-btn { padding: 7px 16px; border-radius: 6px; border: 1px solid var(--border); background: transparent; color: var(--text-dim); font-family: 'IBM Plex Mono', monospace; font-size: 12px; cursor: pointer; transition: all 0.2s; }
   .logout-btn:hover { border-color: var(--accent3); color: var(--accent3); }
   .last-update { font-size: 11px; color: var(--text-dim); }
-
+ 
   .stats-row { display: grid; grid-template-columns: repeat(5, 1fr); gap: 14px; margin-bottom: 24px; }
   .stat-card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 16px 20px; position: relative; overflow: hidden; }
   .stat-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px; }
@@ -81,20 +79,20 @@
   .stat-card.blue .stat-value { color: var(--accent); } .stat-card.green .stat-value { color: var(--accent2); }
   .stat-card.orange .stat-value { color: var(--accent3); } .stat-card.purple .stat-value { color: var(--accent4); }
   .stat-card.yellow .stat-value { color: var(--accent5); }
-
+ 
   .main-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
   .card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
   .card-header { padding: 14px 18px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; }
   .card-title { font-size: 12px; color: var(--text-dim); text-transform: uppercase; letter-spacing: 1px; }
   .card-badge { font-size: 11px; padding: 3px 10px; border-radius: 100px; background: rgba(0,212,255,0.1); color: var(--accent); border: 1px solid rgba(0,212,255,0.2); }
-
+ 
   .device-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; padding: 14px; }
   .device-item { background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; padding: 12px; cursor: pointer; transition: all 0.2s; }
   .device-item:hover { border-color: var(--accent); } .device-item.active { border-color: var(--accent); background: rgba(0,212,255,0.05); }
   .device-name { font-size: 11px; color: var(--text); margin-bottom: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .device-count { font-size: 22px; font-weight: 600; } .device-sub { font-size: 10px; color: var(--text-dim); }
   .device-dot { width: 5px; height: 5px; border-radius: 50%; display: inline-block; margin-left: 5px; animation: pulse 2s infinite; }
-
+ 
   .metrics-list { padding: 4px 0; max-height: 320px; overflow-y: auto; }
   .metrics-list::-webkit-scrollbar { width: 4px; } .metrics-list::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
   .metric-row { display: flex; align-items: center; justify-content: space-between; padding: 10px 18px; border-bottom: 1px solid var(--border); transition: background 0.15s; }
@@ -102,41 +100,32 @@
   .metric-name { font-size: 12px; color: var(--text-dim); } .metric-val { font-size: 14px; font-weight: 600; }
   .metric-val.num { color: var(--accent); } .metric-val.bool-true { color: var(--accent2); }
   .metric-val.bool-false { color: var(--text-dim); } .metric-val.alert { color: var(--accent3); }
-
+ 
   .alert-list { padding: 12px; }
   .alert-item { display: flex; align-items: flex-start; gap: 12px; padding: 12px 14px; border-radius: 8px; margin-bottom: 10px; }
   .alert-item.warn { background: rgba(255,107,53,0.1); border: 1px solid rgba(255,107,53,0.3); }
   .alert-text { font-size: 13px; } .alert-item.warn .alert-text { color: var(--accent3); }
   .alert-sub { font-size: 10px; color: var(--text-dim); margin-top: 3px; }
-
+ 
   .timeline { padding: 14px 18px; max-height: 300px; overflow-y: auto; }
   .tl-item { display: flex; gap: 12px; margin-bottom: 12px; align-items: flex-start; }
   .tl-time { font-size: 10px; color: var(--text-dim); width: 75px; flex-shrink: 0; padding-top: 2px; }
   .tl-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; margin-top: 4px; }
   .tl-content { flex: 1; font-size: 12px; color: var(--text); line-height: 1.5; }
   .tl-device { font-size: 10px; color: var(--text-dim); margin-top: 2px; }
-
+ 
   .no-data { text-align: center; padding: 40px 20px; color: var(--text-dim); font-size: 13px; }
-
-  /* CHARTS */
-  .section-divider { display: flex; align-items: center; gap: 16px; margin: 32px 0 24px; }
-  .section-divider-line { flex: 1; height: 1px; background: var(--border); }
-  .section-divider-label { font-size: 12px; color: var(--accent4); text-transform: uppercase; letter-spacing: 2px; padding: 6px 16px; border: 1px solid rgba(168,85,247,0.3); border-radius: 100px; background: rgba(168,85,247,0.05); }
-
-  .charts-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; margin-bottom: 32px; }
-  .chart-card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
-  .chart-wrapper { padding: 16px; height: 200px; position: relative; }
-
+ 
   @media (max-width: 768px) {
     .stats-row { grid-template-columns: repeat(2, 1fr); }
-    .main-grid, .charts-grid { grid-template-columns: 1fr; }
+    .main-grid { grid-template-columns: 1fr; }
     .device-grid { grid-template-columns: repeat(2, 1fr); }
     .login-box { width: 90%; padding: 28px 24px; }
   }
 </style>
 </head>
 <body>
-
+ 
 <!-- LOGIN -->
 <div class="login-page" id="loginPage">
   <div class="login-box">
@@ -160,11 +149,11 @@
     <div class="login-error" id="loginError">Invalid credentials. Please try again.</div>
   </div>
 </div>
-
+ 
 <!-- DASHBOARD -->
 <div class="dashboard" id="dashboard">
   <div class="container">
-
+ 
     <header>
       <div class="header-left">
         <h1>Edge Forwarder Dashboard</h1>
@@ -179,7 +168,7 @@
         <button class="logout-btn" onclick="doLogout()">⏏ Logout</button>
       </div>
     </header>
-
+ 
     <div class="stats-row">
       <div class="stat-card blue"><div class="stat-label">Devices</div><div class="stat-value" id="statDevices">—</div></div>
       <div class="stat-card green"><div class="stat-label">Messages</div><div class="stat-value" id="statMessages">—</div></div>
@@ -187,7 +176,7 @@
       <div class="stat-card purple"><div class="stat-label">Metrics</div><div class="stat-value" id="statMetrics">—</div></div>
       <div class="stat-card yellow"><div class="stat-label">Data Quality</div><div class="stat-value" id="statQuality">—</div></div>
     </div>
-
+ 
     <div class="main-grid">
       <div class="card">
         <div class="card-header"><span class="card-title">Device Status</span><span class="card-badge" id="deviceBadge">—</span></div>
@@ -206,74 +195,23 @@
         <div class="timeline" id="timeline"><div class="no-data">Waiting for data...</div></div>
       </div>
     </div>
-
-    <!-- CHARTS -->
-    <div class="section-divider">
-      <div class="section-divider-line"></div>
-      <div class="section-divider-label">📊 Session History — up to 24h (stored in browser)</div>
-      <div class="section-divider-line"></div>
-    </div>
-
-    <div class="charts-grid">
-      <div class="chart-card">
-        <div class="card-header"><span class="card-title">Temperature</span><span class="card-badge" style="color:var(--accent3);border-color:rgba(255,107,53,0.2);background:rgba(255,107,53,0.05)">°C — WB_MSW_A</span></div>
-        <div class="chart-wrapper"><canvas id="chartTemp"></canvas></div>
-      </div>
-      <div class="chart-card">
-        <div class="card-header"><span class="card-title">Humidity</span><span class="card-badge">% — WB_MSW A/B</span></div>
-        <div class="chart-wrapper"><canvas id="chartHumidity"></canvas></div>
-      </div>
-      <div class="chart-card">
-        <div class="card-header"><span class="card-title">CO2 Level</span><span class="card-badge" style="color:var(--accent2);border-color:rgba(0,255,157,0.2);background:rgba(0,255,157,0.05)">ppm — WB_MSW A/B</span></div>
-        <div class="chart-wrapper"><canvas id="chartCO2"></canvas></div>
-      </div>
-      <div class="chart-card">
-        <div class="card-header"><span class="card-title">Voltage L3</span><span class="card-badge" style="color:var(--accent5);border-color:rgba(245,158,11,0.2);background:rgba(245,158,11,0.05)">V — Eastrone</span></div>
-        <div class="chart-wrapper"><canvas id="chartVoltage"></canvas></div>
-      </div>
-      <div class="chart-card">
-        <div class="card-header"><span class="card-title">VOC eCO2</span><span class="card-badge" style="color:var(--accent4);border-color:rgba(168,85,247,0.2);background:rgba(168,85,247,0.05)">ppm — WB_MSW A/B</span></div>
-        <div class="chart-wrapper"><canvas id="chartVOC"></canvas></div>
-      </div>
-      <div class="chart-card">
-        <div class="card-header"><span class="card-title">Noise Level</span><span class="card-badge">dB — WB_MSW_B</span></div>
-        <div class="chart-wrapper"><canvas id="chartNoise"></canvas></div>
-      </div>
-    </div>
-
+ 
   </div>
 </div>
-
+ 
 <script>
 let interval = null;
 let totalMessages = 0;
 let selectedDevice = null;
 let apiUrl = '', tenantId = '', apiKey = '';
-let charts = {};
-
-// In-browser history — persists across refreshes during same session
-const history = {
-  temp_a: [], humidity_a: [], humidity_b: [],
-  co2_a: [], co2_b: [], voltage_l3: [],
-  voc_a: [], voc_b: [], noise_b: []
-};
-
-const CUTOFF = () => Date.now() - 24 * 60 * 60 * 1000;
-
-function pushH(key, val) {
-  if (val === undefined || val === null || typeof val !== 'number') return;
-  history[key].push({ x: new Date(), y: val });
-  history[key] = history[key].filter(p => p.x.getTime() > CUTOFF());
-}
-
+ 
 const ALERT_KEYS = ['DALI_Bus_Error', 'Watchdog_Event', 'PowerUp_Event'];
 const DEVICE_COLORS = {
   'WB_MSW_A': '#00d4ff', 'WB_MSW_B': '#00bdff',
   'Eastrone_Quadro': '#f59e0b', 'SENECA_test_Quadro': '#a855f7',
   'Resi_dali_SIO_QuadroG': '#00ff9d', 'Dat3130_QuadroC': '#ff6b35'
 };
-
-// LOGIN
+ 
 async function doLogin() {
   const url = document.getElementById('loginUrl').value.trim();
   const tenant = document.getElementById('loginTenant').value.trim();
@@ -286,37 +224,34 @@ async function doLogin() {
     apiUrl = url; tenantId = tenant; apiKey = key;
     document.getElementById('loginPage').style.display = 'none';
     document.getElementById('dashboard').classList.add('show');
-    initCharts();
     startFetching();
   } catch { showLoginError('Cannot connect. Check the URL and try again.'); }
 }
-
+ 
 function showLoginError(msg) {
   const el = document.getElementById('loginError');
   el.textContent = msg; el.classList.add('show');
 }
-
+ 
 function doLogout() {
   clearInterval(interval); interval = null;
   totalMessages = 0; selectedDevice = null;
-  Object.values(charts).forEach(c => c.destroy()); charts = {};
-  Object.keys(history).forEach(k => history[k] = []);
   document.getElementById('dashboard').classList.remove('show');
   document.getElementById('loginPage').style.display = 'flex';
   document.getElementById('loginError').classList.remove('show');
 }
-
+ 
 function startFetching() {
   fetchData();
   interval = setInterval(fetchData, 10000);
 }
-
+ 
 function setStatus(type, text) {
   const pill = document.getElementById('statusPill');
   pill.className = `status-pill ${type}`;
   document.getElementById('statusText').textContent = text;
 }
-
+ 
 async function fetchData() {
   try {
     setStatus('loading', 'Fetching...');
@@ -330,12 +265,11 @@ async function fetchData() {
     document.getElementById('lastUpdate').textContent = 'Updated: ' + new Date().toLocaleTimeString();
   } catch { setStatus('error', 'Error'); }
 }
-
+ 
 function processData(data, json) {
   if (!data.length) return;
   document.getElementById('gatewayInfo').textContent =
     `${json.gateway || 'unknown'} / ${tenantId} / ${json.protocol || 'unknown'}`;
-
   const devices = {}, metrics = {}, alerts = [];
   data.forEach(msg => {
     const dev = msg.deviceId;
@@ -345,35 +279,16 @@ function processData(data, json) {
     metrics[dev][k] = v;
     if (ALERT_KEYS.includes(k) && v === true) alerts.push({ device: dev, key: k, time: msg.timestamp });
   });
-
   document.getElementById('statDevices').textContent = Object.keys(devices).length;
   document.getElementById('statMessages').textContent = totalMessages;
   document.getElementById('statAlerts').textContent = alerts.length;
   document.getElementById('statMetrics').textContent = Object.values(metrics).reduce((s, m) => s + Object.keys(m).length, 0);
   document.getElementById('statQuality').textContent = 'GOOD';
   document.getElementById('deviceBadge').textContent = `${Object.keys(devices).length} ONLINE`;
-
-  // Push to history
-  const wa = metrics['WB_MSW_A'] || {};
-  const wb = metrics['WB_MSW_B'] || {};
-  const ea = metrics['Eastrone_Quadro'] || {};
-  pushH('temp_a', wa.Temperature);
-  pushH('humidity_a', wa.Humidity);
-  pushH('humidity_b', wb.Humidity);
-  pushH('co2_a', wa.CO2_ppm);
-  pushH('co2_b', wb.CO2_ppm);
-  pushH('voltage_l3', ea.Voltage_L3);
-  pushH('voc_a', wa.VOC_eCO2);
-  pushH('voc_b', wb.VOC_eCO2);
-  pushH('noise_b', wb.Noise_level);
-
-  renderDevices(devices, metrics);
-  renderAlerts(alerts);
-  renderTimeline(data);
+  renderDevices(devices, metrics); renderAlerts(alerts); renderTimeline(data);
   if (selectedDevice && metrics[selectedDevice]) renderMetrics(selectedDevice, metrics[selectedDevice]);
-  updateCharts();
 }
-
+ 
 function renderDevices(devices, metrics) {
   const grid = document.getElementById('deviceGrid'); grid.innerHTML = '';
   Object.keys(devices).forEach(dev => {
@@ -386,7 +301,7 @@ function renderDevices(devices, metrics) {
     grid.appendChild(div);
   });
 }
-
+ 
 function renderMetrics(deviceId, obj) {
   document.getElementById('metricsTitle').textContent = deviceId;
   const list = document.getElementById('metricsList'); list.innerHTML = '';
@@ -401,7 +316,7 @@ function renderMetrics(deviceId, obj) {
     list.appendChild(row);
   });
 }
-
+ 
 function renderAlerts(alerts) {
   const list = document.getElementById('alertList');
   document.getElementById('alertBadge').textContent = `${alerts.length} ALERT`;
@@ -413,7 +328,7 @@ function renderAlerts(alerts) {
     list.appendChild(div);
   });
 }
-
+ 
 function renderTimeline(data) {
   const tl = document.getElementById('timeline'); tl.innerHTML = '';
   [...data].reverse().slice(0, 15).forEach(msg => {
@@ -426,55 +341,7 @@ function renderTimeline(data) {
     tl.appendChild(item);
   });
 }
-
-// CHARTS
-const COPTS = {
-  responsive: true, maintainAspectRatio: false,
-  animation: { duration: 300 },
-  plugins: {
-    legend: { labels: { color: '#64748b', font: { family: 'IBM Plex Mono', size: 11 }, boxWidth: 12, padding: 10 } },
-    tooltip: { backgroundColor: '#111827', titleColor: '#e2e8f0', bodyColor: '#94a3b8', borderColor: '#1e2d45', borderWidth: 1 }
-  },
-  scales: {
-    x: { type: 'time', time: { unit: 'minute', displayFormats: { minute: 'HH:mm' } }, ticks: { color: '#64748b', font: { family: 'IBM Plex Mono', size: 10 }, maxTicksLimit: 8 }, grid: { color: '#1e2d45' } },
-    y: { ticks: { color: '#64748b', font: { family: 'IBM Plex Mono', size: 10 } }, grid: { color: '#1e2d45' } }
-  }
-};
-
-function mkDs(label, data, color) {
-  return { label, data, borderColor: color, backgroundColor: 'transparent', borderWidth: 2, pointRadius: 2, tension: 0.3 };
-}
-
-function initCharts() {
-  const make = (id, datasets) => {
-    const ctx = document.getElementById(id); if (!ctx) return;
-    charts[id] = new Chart(ctx, { type: 'line', data: { datasets }, options: JSON.parse(JSON.stringify(COPTS)) });
-  };
-  make('chartTemp', [mkDs('WB_MSW_A', history.temp_a, '#ff6b35')]);
-  make('chartHumidity', [mkDs('WB_MSW_A', history.humidity_a, '#00d4ff'), mkDs('WB_MSW_B', history.humidity_b, '#a855f7')]);
-  make('chartCO2', [mkDs('WB_MSW_A', history.co2_a, '#00ff9d'), mkDs('WB_MSW_B', history.co2_b, '#f59e0b')]);
-  make('chartVoltage', [mkDs('Voltage_L3', history.voltage_l3, '#f59e0b')]);
-  make('chartVOC', [mkDs('WB_MSW_A', history.voc_a, '#a855f7'), mkDs('WB_MSW_B', history.voc_b, '#00d4ff')]);
-  make('chartNoise', [mkDs('WB_MSW_B', history.noise_b, '#64748b')]);
-}
-
-function updateCharts() {
-  if (!charts['chartTemp']) return;
-  const pairs = [
-    ['chartTemp', [history.temp_a]],
-    ['chartHumidity', [history.humidity_a, history.humidity_b]],
-    ['chartCO2', [history.co2_a, history.co2_b]],
-    ['chartVoltage', [history.voltage_l3]],
-    ['chartVOC', [history.voc_a, history.voc_b]],
-    ['chartNoise', [history.noise_b]],
-  ];
-  pairs.forEach(([id, datasets]) => {
-    if (!charts[id]) return;
-    datasets.forEach((d, i) => { charts[id].data.datasets[i].data = d; });
-    charts[id].update('none');
-  });
-}
-
+ 
 document.addEventListener('keydown', e => {
   if (e.key === 'Enter' && document.getElementById('loginPage').style.display !== 'none') doLogin();
 });
