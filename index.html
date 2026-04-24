@@ -8,7 +8,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/chartjs-adapter-date-fns/3.0.0/chartjs-adapter-date-fns.bundle.min.js"></script>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&display=swap');
- 
+
   :root {
     --bg: #0a0e1a;
     --surface: #111827;
@@ -23,9 +23,9 @@
     --text-dim: #64748b;
     --text-muted: #334155;
   }
- 
+
   * { margin: 0; padding: 0; box-sizing: border-box; }
- 
+
   body {
     background: var(--bg);
     color: var(--text);
@@ -33,7 +33,7 @@
     min-height: 100vh;
     overflow-x: hidden;
   }
- 
+
   body::before {
     content: '';
     position: fixed; inset: 0;
@@ -43,27 +43,27 @@
     background-size: 40px 40px;
     pointer-events: none; z-index: 0;
   }
- 
+
   /* ═══ LOGIN ═══ */
   .login-page {
     position: fixed; inset: 0; z-index: 100;
     display: flex; align-items: center; justify-content: center;
     background: var(--bg);
   }
- 
+
   .login-box {
     background: var(--surface);
     border: 1px solid var(--border);
     border-radius: 16px; padding: 40px; width: 420px;
     position: relative; overflow: hidden;
   }
- 
+
   .login-box::before {
     content: ''; position: absolute;
     top: 0; left: 0; right: 0; height: 3px;
     background: linear-gradient(90deg, var(--accent), var(--accent4));
   }
- 
+
   .login-logo { text-align: center; margin-bottom: 32px; }
   .login-logo h1 { font-size: 18px; color: var(--accent); letter-spacing: 3px; text-transform: uppercase; margin-bottom: 6px; }
   .login-logo p { font-size: 12px; color: var(--text-dim); }
@@ -75,23 +75,23 @@
   .login-btn:hover { opacity: 0.85; }
   .login-error { background: rgba(255,107,53,0.1); border: 1px solid rgba(255,107,53,0.3); border-radius: 8px; padding: 12px 16px; font-size: 13px; color: var(--accent3); margin-top: 16px; display: none; }
   .login-error.show { display: block; }
- 
+
   /* ═══ DASHBOARD ═══ */
   .dashboard { display: none; }
   .dashboard.show { display: block; }
- 
+
   .container { position: relative; z-index: 1; padding: 24px; max-width: 1400px; margin: 0 auto; }
- 
+
   header {
     display: flex; align-items: center; justify-content: space-between;
     margin-bottom: 32px; padding-bottom: 20px;
     border-bottom: 1px solid var(--border);
   }
- 
+
   .header-left h1 { font-size: 20px; color: var(--accent); letter-spacing: 2px; text-transform: uppercase; }
   .header-left p { font-size: 13px; color: var(--text-dim); margin-top: 4px; }
   .header-right { display: flex; align-items: center; gap: 12px; }
- 
+
   .status-pill {
     display: flex; align-items: center; gap: 8px;
     padding: 8px 16px; border-radius: 100px; font-size: 13px; border: 1px solid;
@@ -99,55 +99,55 @@
   .status-pill.live { background: rgba(0,255,157,0.1); border-color: rgba(0,255,157,0.3); color: var(--accent2); }
   .status-pill.loading { background: rgba(245,158,11,0.1); border-color: rgba(245,158,11,0.3); color: var(--accent5); }
   .status-pill.error { background: rgba(255,107,53,0.1); border-color: rgba(255,107,53,0.3); color: var(--accent3); }
- 
+
   .pulse { width: 8px; height: 8px; border-radius: 50%; animation: pulse 2s infinite; }
   .live .pulse { background: var(--accent2); }
   .loading .pulse { background: var(--accent5); }
   .error .pulse { background: var(--accent3); animation: none; }
- 
+
   @keyframes pulse { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.5; transform: scale(0.8); } }
- 
+
   .logout-btn { padding: 7px 16px; border-radius: 6px; border: 1px solid var(--border); background: transparent; color: var(--text-dim); font-family: 'IBM Plex Mono', monospace; font-size: 12px; cursor: pointer; transition: all 0.2s; }
   .logout-btn:hover { border-color: var(--accent3); color: var(--accent3); }
   .last-update { font-size: 11px; color: var(--text-dim); }
- 
+
   /* Stats */
   .stats-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 28px; }
- 
+
   .stat-card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 20px; position: relative; overflow: hidden; }
   .stat-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px; }
   .stat-card.blue::before { background: var(--accent); }
   .stat-card.green::before { background: var(--accent2); }
   .stat-card.orange::before { background: var(--accent3); }
   .stat-card.purple::before { background: var(--accent4); }
- 
+
   .stat-label { font-size: 11px; color: var(--text-dim); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px; }
   .stat-value { font-size: 32px; font-weight: 600; }
   .stat-card.blue .stat-value { color: var(--accent); }
   .stat-card.green .stat-value { color: var(--accent2); }
   .stat-card.orange .stat-value { color: var(--accent3); }
   .stat-card.purple .stat-value { color: var(--accent4); }
- 
+
   /* Tabs */
   .tabs { display: flex; gap: 8px; margin-bottom: 20px; flex-wrap: wrap; }
   .tab { padding: 8px 18px; border-radius: 8px; border: 1px solid var(--border); background: var(--surface); color: var(--text-dim); font-size: 13px; cursor: pointer; transition: all 0.2s; white-space: nowrap; }
   .tab:hover { border-color: var(--accent); color: var(--accent); }
   .tab.active { background: rgba(0,212,255,0.1); border-color: var(--accent); color: var(--accent); }
- 
+
   /* Main grid */
   .main-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
   .card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; }
   .card.full { grid-column: 1 / -1; }
- 
+
   .card-header { padding: 16px 20px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; }
   .card-title { font-size: 13px; color: var(--text-dim); text-transform: uppercase; letter-spacing: 1px; }
   .card-badge { font-size: 11px; padding: 3px 10px; border-radius: 100px; background: rgba(0,212,255,0.1); color: var(--accent); border: 1px solid rgba(0,212,255,0.2); }
- 
+
   /* Metrics list */
   .metrics-list { padding: 8px 0; max-height: 320px; overflow-y: auto; }
   .metrics-list::-webkit-scrollbar { width: 4px; }
   .metrics-list::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
- 
+
   .metric-row { display: flex; align-items: center; justify-content: space-between; padding: 12px 20px; border-bottom: 1px solid var(--border); transition: background 0.15s; }
   .metric-row:last-child { border-bottom: none; }
   .metric-row:hover { background: var(--surface2); }
@@ -157,7 +157,7 @@
   .metric-val.bool-true { color: var(--accent2); }
   .metric-val.bool-false { color: var(--text-dim); }
   .metric-val.alert { color: var(--accent3); }
- 
+
   /* Bar chart */
   .bar-chart { padding: 20px; }
   .bar-row { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
@@ -165,7 +165,7 @@
   .bar-track { flex: 1; height: 6px; background: var(--surface2); border-radius: 3px; overflow: hidden; }
   .bar-fill { height: 100%; border-radius: 3px; transition: width 1s cubic-bezier(0.4,0,0.2,1); }
   .bar-val { font-size: 12px; color: var(--text); width: 80px; flex-shrink: 0; }
- 
+
   /* Device grid */
   .device-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; padding: 16px; }
   .device-item { background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; padding: 14px; cursor: pointer; transition: all 0.2s; }
@@ -175,13 +175,13 @@
   .device-count { font-size: 20px; font-weight: 600; }
   .device-sub { font-size: 10px; color: var(--text-dim); }
   .device-dot { width: 6px; height: 6px; border-radius: 50%; display: inline-block; margin-left: 6px; animation: pulse 2s infinite; }
- 
+
   /* Alert box */
   .alert-box { margin: 12px 16px; padding: 14px 18px; border-radius: 8px; background: rgba(255,107,53,0.1); border: 1px solid rgba(255,107,53,0.3); display: flex; align-items: center; gap: 12px; }
   .alert-icon { font-size: 18px; }
   .alert-text { font-size: 13px; color: var(--accent3); }
   .alert-sub { font-size: 11px; color: var(--text-dim); margin-top: 4px; }
- 
+
   /* Timeline */
   .timeline { padding: 16px 20px; max-height: 320px; overflow-y: auto; }
   .tl-item { display: flex; gap: 14px; margin-bottom: 14px; align-items: flex-start; }
@@ -189,18 +189,18 @@
   .tl-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; margin-top: 4px; }
   .tl-content { flex: 1; font-size: 13px; color: var(--text); line-height: 1.5; }
   .tl-device { font-size: 11px; color: var(--text-dim); margin-top: 2px; }
- 
+
   .no-data { text-align: center; padding: 40px 20px; color: var(--text-dim); font-size: 13px; }
- 
+
   /* ═══ CHART SECTION ═══ */
   .section-divider { display: flex; align-items: center; gap: 16px; margin: 32px 0 24px; }
   .section-divider-line { flex: 1; height: 1px; background: var(--border); }
   .section-divider-label { font-size: 12px; color: var(--accent4); text-transform: uppercase; letter-spacing: 2px; padding: 6px 16px; border: 1px solid rgba(168,85,247,0.3); border-radius: 100px; background: rgba(168,85,247,0.05); }
- 
+
   .charts-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 24px; }
   .chart-card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; }
   .chart-wrapper { padding: 16px; height: 200px; position: relative; }
- 
+
   @media (max-width: 768px) {
     .stats-row { grid-template-columns: repeat(2, 1fr); }
     .main-grid, .charts-grid { grid-template-columns: 1fr; }
@@ -210,7 +210,7 @@
 </style>
 </head>
 <body>
- 
+
 <!-- LOGIN -->
 <div class="login-page" id="loginPage">
   <div class="login-box">
@@ -234,11 +234,11 @@
     <div class="login-error" id="loginError">Invalid credentials. Please try again.</div>
   </div>
 </div>
- 
+
 <!-- DASHBOARD -->
 <div class="dashboard" id="dashboard">
   <div class="container">
- 
+
     <header>
       <div class="header-left">
         <h1>Edge Forwarder Dashboard</h1>
@@ -253,7 +253,7 @@
         <button class="logout-btn" onclick="doLogout()">⏏ Logout</button>
       </div>
     </header>
- 
+
     <!-- Stats -->
     <div class="stats-row">
       <div class="stat-card blue"><div class="stat-label">Devices</div><div class="stat-value" id="statDevices">—</div></div>
@@ -261,7 +261,7 @@
       <div class="stat-card orange"><div class="stat-label">Active Alerts</div><div class="stat-value" id="statAlerts">—</div></div>
       <div class="stat-card purple"><div class="stat-label">Data Quality</div><div class="stat-value" id="statQuality">—</div></div>
     </div>
- 
+
     <!-- Tabs -->
     <div class="tabs">
       <div class="tab active" id="tab-all" onclick="switchTab('all')">All Devices</div>
@@ -271,10 +271,10 @@
       <div class="tab" id="tab-resi" onclick="switchTab('resi')">Resi DALI (Lighting)</div>
       <div class="tab" id="tab-dat" onclick="switchTab('dat')">Dat3130 (Relay)</div>
     </div>
- 
+
     <!-- Main grid -->
     <div class="main-grid">
- 
+
       <!-- Device overview -->
       <div class="card">
         <div class="card-header">
@@ -285,7 +285,7 @@
           <div class="no-data" style="grid-column:1/-1">Waiting for data...</div>
         </div>
       </div>
- 
+
       <!-- Alerts -->
       <div class="card">
         <div class="card-header">
@@ -293,13 +293,13 @@
           <span class="card-badge" id="alertBadge" style="color:var(--accent3);border-color:rgba(255,107,53,0.3);background:rgba(255,107,53,0.1)">—</span>
         </div>
         <div id="alertsPanel"><div class="no-data">Waiting for data...</div></div>
- 
+
         <div style="padding:16px 20px; border-top:1px solid var(--border)">
           <div class="card-title" style="margin-bottom:12px">Latest Environmental Data</div>
           <div id="envPanel"><div class="no-data" style="padding:12px 0">Waiting...</div></div>
         </div>
       </div>
- 
+
       <!-- WB_MSW sensor bars -->
       <div class="card" id="panel-wb">
         <div class="card-header">
@@ -310,7 +310,7 @@
           <div class="no-data">Waiting for data...</div>
         </div>
       </div>
- 
+
       <!-- Eastrone power metrics -->
       <div class="card" id="panel-eastrone">
         <div class="card-header">
@@ -321,7 +321,7 @@
           <div class="no-data">Waiting for data...</div>
         </div>
       </div>
- 
+
       <!-- SENECA I/O -->
       <div class="card" id="panel-seneca">
         <div class="card-header">
@@ -332,7 +332,7 @@
           <div class="no-data">Waiting for data...</div>
         </div>
       </div>
- 
+
       <!-- Dat3130 Relay -->
       <div class="card" id="panel-dat">
         <div class="card-header">
@@ -343,7 +343,7 @@
           <div class="no-data">Waiting for data...</div>
         </div>
       </div>
- 
+
       <!-- Timeline -->
       <div class="card full">
         <div class="card-header">
@@ -354,16 +354,16 @@
           <div class="no-data">Waiting for data...</div>
         </div>
       </div>
- 
+
     </div>
- 
+
     <!-- ═══ CHART SECTION ═══ -->
     <div class="section-divider">
       <div class="section-divider-line"></div>
       <div class="section-divider-label">📊 Session History (up to 24h — stored in browser)</div>
       <div class="section-divider-line"></div>
     </div>
- 
+
     <div class="charts-grid">
       <div class="chart-card">
         <div class="card-header"><span class="card-title">Temperature</span><span class="card-badge" style="color:var(--accent3);border-color:rgba(255,107,53,0.2);background:rgba(255,107,53,0.05)">°C — WB_MSW_A</span></div>
@@ -390,10 +390,10 @@
         <div class="chart-wrapper"><canvas id="chartNoise"></canvas></div>
       </div>
     </div>
- 
+
   </div>
 </div>
- 
+
 <script>
 // ═══ STATE ═══
 let interval = null;
@@ -401,7 +401,7 @@ let totalMessages = 0;
 let activeTab = 'all';
 let apiUrl = '', tenantId = '', apiKey = '';
 let charts = {};
- 
+
 // In-browser history — stores up to 24h of data points
 const MAX_HISTORY = 24 * 60; // one point per minute max
 const history = {
@@ -409,16 +409,16 @@ const history = {
   co2_a: [], co2_b: [], voltage_l3: [],
   voc_a: [], voc_b: [], noise_b: []
 };
- 
+
 const ALERT_KEYS = ['DALI_Bus_Error', 'Watchdog_Event', 'PowerUp_Event'];
 const DEVICE_COLORS = {
   'WB_MSW_A': '#00d4ff', 'WB_MSW_B': '#00bdff',
   'Eastrone_Quadro': '#f59e0b', 'SENECA_test_Quadro': '#a855f7',
   'Resi_dali_SIO_QuadroG': '#00ff9d', 'Dat3130_QuadroC': '#ff6b35'
 };
- 
+
 const CUTOFF_24H = () => Date.now() - 24 * 60 * 60 * 1000;
- 
+
 function pushHistory(key, val) {
   if (val === undefined || val === null || typeof val !== 'number') return;
   const now = Date.now();
@@ -426,7 +426,7 @@ function pushHistory(key, val) {
   // Remove points older than 24h
   history[key] = history[key].filter(p => p.x.getTime() > CUTOFF_24H());
 }
- 
+
 // ═══ LOGIN ═══
 async function doLogin() {
   const url = document.getElementById('loginUrl').value.trim();
@@ -444,12 +444,12 @@ async function doLogin() {
     startFetching();
   } catch { showLoginError('Cannot connect. Check the URL and try again.'); }
 }
- 
+
 function showLoginError(msg) {
   const el = document.getElementById('loginError');
   el.textContent = msg; el.classList.add('show');
 }
- 
+
 function doLogout() {
   clearInterval(interval); interval = null;
   totalMessages = 0;
@@ -459,25 +459,25 @@ function doLogout() {
   document.getElementById('loginPage').style.display = 'flex';
   document.getElementById('loginError').classList.remove('show');
 }
- 
+
 function switchTab(tab) {
   activeTab = tab;
   document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
   document.getElementById(`tab-${tab}`)?.classList.add('active');
 }
- 
+
 // ═══ FETCH ═══
 function startFetching() {
   fetchData();
   interval = setInterval(fetchData, 10000);
 }
- 
+
 function setStatus(type, text) {
   const pill = document.getElementById('statusPill');
   pill.className = `status-pill ${type}`;
   document.getElementById('statusText').textContent = text;
 }
- 
+
 async function fetchData() {
   try {
     setStatus('loading', 'Fetching...');
@@ -491,14 +491,18 @@ async function fetchData() {
     document.getElementById('lastUpdate').textContent = 'Updated: ' + new Date().toLocaleTimeString();
   } catch { setStatus('error', 'Error'); }
 }
- 
+
 // ═══ PROCESS ═══
 function processData(data, json) {
-  if (!data.length) return;
- 
+  if (!data || !data.length) {
+    setStatus('live', 'LIVE — No data yet');
+    return;
+  }
+
+  const firstMsg = data[0];
   document.getElementById('gatewayInfo').textContent =
-    `${json.gateway || 'unknown'} / ${tenantId} / ${json.protocol || 'unknown'}`;
- 
+    `${firstMsg.gatewayId || json.gateway || 'unknown'} / ${firstMsg.tenantId || tenantId} / ${firstMsg.protocol || json.protocol || 'unknown'}`;
+
   // Build device metrics map
   const devices = {}, metrics = {}, alerts = [];
   data.forEach(msg => {
@@ -509,14 +513,14 @@ function processData(data, json) {
     metrics[dev][k] = v;
     if (ALERT_KEYS.includes(k) && v === true) alerts.push({ device: dev, key: k, time: msg.timestamp });
   });
- 
+
   // Stats
   document.getElementById('statDevices').textContent = Object.keys(devices).length;
   document.getElementById('statMessages').textContent = totalMessages;
   document.getElementById('statAlerts').textContent = alerts.length;
   document.getElementById('statQuality').textContent = 'GOOD';
   document.getElementById('deviceBadge').textContent = `${Object.keys(devices).length} ONLINE`;
- 
+
   // Push to history
   const wb_a = metrics['WB_MSW_A'] || {};
   const wb_b = metrics['WB_MSW_B'] || {};
@@ -530,7 +534,7 @@ function processData(data, json) {
   pushHistory('voc_a', wb_a.VOC_eCO2);
   pushHistory('voc_b', wb_b.VOC_eCO2);
   pushHistory('noise_b', wb_b.Noise_level);
- 
+
   // Update UI
   renderDeviceGrid(devices);
   renderAlerts(alerts);
@@ -542,7 +546,7 @@ function processData(data, json) {
   renderTimeline(data);
   updateCharts();
 }
- 
+
 // ═══ RENDER ═══
 function renderDeviceGrid(devices) {
   const grid = document.getElementById('deviceGrid'); grid.innerHTML = '';
@@ -567,7 +571,7 @@ function renderDeviceGrid(devices) {
     grid.appendChild(div);
   });
 }
- 
+
 function renderAlerts(alerts) {
   const panel = document.getElementById('alertsPanel');
   document.getElementById('alertBadge').textContent = `${alerts.length} ALERT`;
@@ -580,7 +584,7 @@ function renderAlerts(alerts) {
     panel.appendChild(div);
   });
 }
- 
+
 function renderEnvPanel(wb_a, wb_b) {
   const panel = document.getElementById('envPanel'); panel.innerHTML = '';
   const rows = [
@@ -598,7 +602,7 @@ function renderEnvPanel(wb_a, wb_b) {
     panel.appendChild(row);
   });
 }
- 
+
 function renderWBBars(wb_a, wb_b) {
   const container = document.getElementById('wbBars');
   const bars = [
@@ -627,7 +631,7 @@ function renderWBBars(wb_a, wb_b) {
   });
   if (!container.children.length) container.innerHTML = '<div class="no-data">Waiting for data...</div>';
 }
- 
+
 function renderMetricsList(elemId, metricsObj) {
   const list = document.getElementById(elemId); list.innerHTML = '';
   if (!Object.keys(metricsObj).length) { list.innerHTML = '<div class="no-data">Waiting for data...</div>'; return; }
@@ -641,7 +645,7 @@ function renderMetricsList(elemId, metricsObj) {
     list.appendChild(row);
   });
 }
- 
+
 function renderTimeline(data) {
   const tl = document.getElementById('timeline'); tl.innerHTML = '';
   document.getElementById('timelineBadge').textContent = `LIVE — ${new Date().toLocaleTimeString()}`;
@@ -661,7 +665,7 @@ function renderTimeline(data) {
     tl.appendChild(item);
   });
 }
- 
+
 // ═══ CHARTS ═══
 const CHART_OPTIONS = {
   responsive: true, maintainAspectRatio: false,
@@ -683,17 +687,17 @@ const CHART_OPTIONS = {
     }
   }
 };
- 
+
 function makeChart(id, datasets) {
   const ctx = document.getElementById(id); if (!ctx) return;
   if (charts[id]) { charts[id].data.datasets = datasets; charts[id].update('none'); return; }
   charts[id] = new Chart(ctx, { type: 'line', data: { datasets }, options: JSON.parse(JSON.stringify(CHART_OPTIONS)) });
 }
- 
+
 function ds(label, data, color, fill = false) {
   return { label, data, borderColor: color, backgroundColor: fill ? color.replace(')', ',0.08)').replace('rgb', 'rgba') : 'transparent', borderWidth: 2, pointRadius: 2, tension: 0.3, fill };
 }
- 
+
 function initCharts() {
   makeChart('chartTemp', [ds('WB_MSW_A', history.temp_a, '#ff6b35', true)]);
   makeChart('chartHumidity', [ds('WB_MSW_A', history.humidity_a, '#00d4ff', true), ds('WB_MSW_B', history.humidity_b, '#a855f7')]);
@@ -702,7 +706,7 @@ function initCharts() {
   makeChart('chartVOC', [ds('WB_MSW_A', history.voc_a, '#a855f7', true), ds('WB_MSW_B', history.voc_b, '#00d4ff')]);
   makeChart('chartNoise', [ds('WB_MSW_B', history.noise_b, '#64748b', true)]);
 }
- 
+
 function updateCharts() {
   if (!charts['chartTemp']) return;
   charts['chartTemp'].data.datasets[0].data = history.temp_a; charts['chartTemp'].update('none');
@@ -715,11 +719,10 @@ function updateCharts() {
   charts['chartVOC'].data.datasets[1].data = history.voc_b; charts['chartVOC'].update('none');
   charts['chartNoise'].data.datasets[0].data = history.noise_b; charts['chartNoise'].update('none');
 }
- 
+
 document.addEventListener('keydown', e => {
   if (e.key === 'Enter' && document.getElementById('loginPage').style.display !== 'none') doLogin();
 });
 </script>
 </body>
 </html>
- 
