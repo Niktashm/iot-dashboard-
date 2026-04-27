@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -196,28 +197,31 @@
       </div>
     </div>
 
-    <!-- CHARTS -->
+    <!-- SVG CHARTS -->
     <div style="display:flex;align-items:center;gap:16px;margin:32px 0 20px">
       <div style="flex:1;height:1px;background:#1e2d45"></div>
-      <div style="font-size:11px;color:#a855f7;text-transform:uppercase;letter-spacing:2px;padding:5px 14px;border:1px solid rgba(168,85,247,0.3);border-radius:100px;background:rgba(168,85,247,0.05)">📊 Last 24 Hours</div>
+      <div style="font-size:11px;color:#a855f7;text-transform:uppercase;letter-spacing:2px;padding:5px 14px;border:1px solid rgba(168,85,247,0.3);border-radius:100px;background:rgba(168,85,247,0.05)">📊 Session History</div>
       <div style="flex:1;height:1px;background:#1e2d45"></div>
     </div>
 
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-bottom:32px">
       <div style="background:#111827;border:1px solid #1e2d45;border-radius:10px;overflow:hidden">
-        <div style="padding:10px 16px;border-bottom:1px solid #1e2d45;font-size:11px;color:#ff6b35;text-transform:uppercase;letter-spacing:1px">Temperature — WB_MSW A/B</div>
+        <div style="padding:10px 16px;border-bottom:1px solid #1e2d45;font-size:11px;color:#64748b;text-transform:uppercase;letter-spacing:1px">Temperature — WB_MSW_A</div>
         <div id="cTemp" style="padding:8px 16px 4px;height:140px"></div>
       </div>
       <div style="background:#111827;border:1px solid #1e2d45;border-radius:10px;overflow:hidden">
-        <div style="padding:10px 16px;border-bottom:1px solid #1e2d45;font-size:11px;color:#00d4ff;text-transform:uppercase;letter-spacing:1px">Humidity — WB_MSW A/B</div>
-        <div id="cHum" style="padding:8px 16px 4px;height:140px"></div>
+        <div style="padding:10px 16px;border-bottom:1px solid #1e2d45;font-size:11px;color:#64748b;text-transform:uppercase;letter-spacing:1px">Humidity — WB_MSW A <span style="color:#a855f7">/ B</span></div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:0">
+          <div id="cHumA" style="padding:8px 8px 4px 16px;height:140px;border-right:1px solid #1e2d45"></div>
+          <div id="cHumB" style="padding:8px 16px 4px 8px;height:140px"></div>
+        </div>
       </div>
       <div style="background:#111827;border:1px solid #1e2d45;border-radius:10px;overflow:hidden">
-        <div style="padding:10px 16px;border-bottom:1px solid #1e2d45;font-size:11px;color:#00ff9d;text-transform:uppercase;letter-spacing:1px">CO2 / Air Quality — WB_MSW_A</div>
-        <div id="cAir" style="padding:8px 16px 4px;height:140px"></div>
+        <div style="padding:10px 16px;border-bottom:1px solid #1e2d45;font-size:11px;color:#64748b;text-transform:uppercase;letter-spacing:1px">CO2 — WB_MSW_A</div>
+        <div id="cCO2" style="padding:8px 16px 4px;height:140px"></div>
       </div>
       <div style="background:#111827;border:1px solid #1e2d45;border-radius:10px;overflow:hidden">
-        <div style="padding:10px 16px;border-bottom:1px solid #1e2d45;font-size:11px;color:#f59e0b;text-transform:uppercase;letter-spacing:1px">Voltage — Eastrone</div>
+        <div style="padding:10px 16px;border-bottom:1px solid #1e2d45;font-size:11px;color:#64748b;text-transform:uppercase;letter-spacing:1px">Voltage L3 — Eastrone</div>
         <div id="cVolt" style="padding:8px 16px 4px;height:140px"></div>
       </div>
     </div>
@@ -251,7 +255,6 @@ async function doLogin() {
     document.getElementById('loginPage').style.display = 'none';
     document.getElementById('dashboard').classList.add('show');
     startFetching();
-    loadWarmHistory();
   } catch { showLoginError('Cannot connect. Check the URL and try again.'); }
 }
 
@@ -314,7 +317,20 @@ function processData(data, json) {
   document.getElementById('deviceBadge').textContent = `${Object.keys(devices).length} ONLINE`;
   renderDevices(devices, metrics); renderAlerts(alerts); renderTimeline(data);
   if (selectedDevice && metrics[selectedDevice]) renderMetrics(selectedDevice, metrics[selectedDevice]);
-  pushLive(data);
+
+  // Push history
+  const wa = metrics['WB_MSW_A'] || {};
+  const wb = metrics['WB_MSW_B'] || {};
+  const ea = metrics['Eastrone_Quadro'] || {};
+  const now = Date.now();
+  const CUTOFF = now - 24 * 60 * 60 * 1000;
+  const push = (arr, val) => { if (typeof val === 'number') { arr.push([now, val]); } while (arr.length && arr[0][0] < CUTOFF) arr.shift(); };
+  push(hx.temp, wa.Temperature);
+  push(hx.hum_a, wa.Humidity);
+  push(hx.hum_b, wb.Humidity);
+  push(hx.co2_a, wa.CO2_ppm);
+  push(hx.volt, ea.Voltage_L3);
+  renderSVGCharts();
 }
 
 function renderDevices(devices, metrics) {
@@ -370,139 +386,67 @@ function renderTimeline(data) {
   });
 }
 
-// ═══ CHART HISTORY ═══
-const hx = { temp: [], hum: [], air: [], volt: [] };
-const CUTOFF_24H = () => Date.now() - 24 * 60 * 60 * 1000;
+// ═══ SVG CHARTS ═══
+const hx = { temp: [], hum_a: [], hum_b: [], co2_a: [], volt: [] };
 
-function pushH(arr, val, t) {
-  if (typeof val !== 'number' || isNaN(val)) return;
-  arr.push([t, val]);
-  while (arr.length && arr[0][0] < CUTOFF_24H()) arr.shift();
-}
-
-async function loadWarmHistory() {
-  try {
-    const res = await fetch(`${apiUrl}?tenantId=${encodeURIComponent(tenantId)}&apiKey=${encodeURIComponent(apiKey)}&mode=warm`);
-    if (!res.ok) return;
-    const json = await res.json();
-    (json.data || []).forEach(msg => {
-      if (!msg.metrics || !msg.timestamp) return;
-      const t = new Date(msg.timestamp).getTime();
-      if (t < CUTOFF_24H()) return;
-      const k = Object.keys(msg.metrics)[0];
-      const v = msg.metrics[k];
-      if (typeof v !== 'number') return;
-      if (msg.deviceId === 'WB_MSW_A' || msg.deviceId === 'WB_MSW_B') {
-        if (k === 'Temperature' || k === 'Temperature_fine') pushH(hx.temp, v, t);
-        if (k === 'Humidity' || k === 'Humidity_fine') pushH(hx.hum, v, t);
-      }
-      if (msg.deviceId === 'WB_MSW_A' && (k === 'Air_quality' || k === 'air_quality' || k === 'AirQuality')) pushH(hx.air, v, t);
-      if (msg.deviceId === 'Eastrone_Quadro' && (k === 'Voltage_L3_L1' || k === 'Voltage_Avg_LL' || k === 'Voltage_L3')) pushH(hx.volt, v, t);
-    });
-    Object.keys(hx).forEach(k => hx[k].sort((a, b) => a[0] - b[0]));
-    renderCharts();
-  } catch(e) {}
-}
-
-function pushLive(data) {
-  data.forEach(msg => {
-    if (!msg.metrics || !msg.timestamp) return;
-    const t = new Date(msg.timestamp).getTime();
-    const k = Object.keys(msg.metrics)[0];
-    const v = msg.metrics[k];
-    if (typeof v !== 'number') return;
-    if (msg.deviceId === 'WB_MSW_A' || msg.deviceId === 'WB_MSW_B') {
-      if (k === 'Temperature' || k === 'Temperature_fine') pushH(hx.temp, v, t);
-      if (k === 'Humidity' || k === 'Humidity_fine') pushH(hx.hum, v, t);
-    }
-    if (msg.deviceId === 'WB_MSW_A' && (k === 'Air_quality' || k === 'air_quality' || k === 'AirQuality')) pushH(hx.air, v, t);
-    if (msg.deviceId === 'Eastrone_Quadro' && (k === 'Voltage_L3_L1' || k === 'Voltage_Avg_LL' || k === 'Voltage_L3')) pushH(hx.volt, v, t);
-  });
-  renderCharts();
-}
-
-function renderCharts() {
+function renderSVGCharts() {
   drawChart('cTemp', hx.temp, '#ff6b35', '°C');
-  drawChart('cHum',  hx.hum,  '#00d4ff', '%');
-  drawChart('cAir',  hx.air,  '#00ff9d', '');
+  drawChart('cHumA', hx.hum_a, '#00d4ff', '%');
+  drawChart('cHumB', hx.hum_b, '#a855f7', '%');
+  drawChart('cCO2', hx.co2_a, '#00ff9d', 'ppm');
   drawChart('cVolt', hx.volt, '#f59e0b', 'V');
 }
 
 function drawChart(id, data, color, unit) {
   const el = document.getElementById(id);
   if (!el) return;
-
-  const W = 400, H = 120;
-  const pl = 42, pr = 8, pt = 14, pb = 22;
-  const cW = W - pl - pr, cH = H - pt - pb;
-
-  // Fixed 24h window
-  const maxT = Date.now();
-  const minT = maxT - 24 * 60 * 60 * 1000;
-
-  const sorted = data.filter(d => d[0] >= minT && d[0] <= maxT).sort((a, b) => a[0] - b[0]);
-
-  if (sorted.length < 1) {
-    el.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:120px;font-size:11px;color:#334155">No data yet</div>';
-    return;
-  }
-
-  const vals = sorted.map(d => d[1]);
+  if (data.length < 2) { el.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100%;font-size:11px;color:#334155">Collecting data...</div>'; return; }
+  const W = el.offsetWidth || 300, H = 120;
+  const vals = data.map(d => d[1]);
+  const times = data.map(d => d[0]);
   const minV = Math.min(...vals), maxV = Math.max(...vals);
-  const vpad = (maxV - minV) * 0.15 || 1;
-  const lo = minV - vpad, hi = maxV + vpad;
+  const rangeV = maxV - minV || 1;
+  const minT = times[0], maxT = times[times.length-1];
+  const rangeT = maxT - minT || 1;
+  const pad = { t: 10, r: 8, b: 24, l: 42 };
+  const cW = W - pad.l - pad.r, cH = H - pad.t - pad.b;
 
-  const px = t => pl + ((t - minT) / (maxT - minT)) * cW;
-  const py = v => pt + cH - ((v - lo) / (hi - lo)) * cH;
+  const px = t => pad.l + ((t - minT) / rangeT) * cW;
+  const py = v => pad.t + cH - ((v - minV) / rangeV) * cH;
 
-  // Build path with gap detection (gap > 10 min = new segment)
-  let pathD = '';
-  sorted.forEach((d, i) => {
-    const x = px(d[0]).toFixed(1), y = py(d[1]).toFixed(1);
-    if (i === 0) { pathD += `M${x},${y}`; return; }
-    if (d[0] - sorted[i-1][0] > 10 * 60 * 1000) pathD += ` M${x},${y}`;
-    else pathD += ` L${x},${y}`;
-  });
+  const pts = data.map(d => `${px(d[0]).toFixed(1)},${py(d[1]).toFixed(1)}`).join(' ');
+  const fillPts = `${px(times[0]).toFixed(1)},${(pad.t+cH).toFixed(1)} ${pts} ${px(times[times.length-1]).toFixed(1)},${(pad.t+cH).toFixed(1)}`;
 
-  // Y labels: min, mid, max
-  const yTicks = [minV, (minV+maxV)/2, maxV];
-  const yLabels = yTicks.map(v =>
-    `<text x="${pl-4}" y="${(py(v)+3.5).toFixed(1)}" text-anchor="end" fill="#64748b" font-size="9" font-family="Courier New,Courier,monospace" direction="ltr">${Math.round(v*10)/10}</text>`
-  ).join('');
+  // Y axis labels
+  const yLabels = [minV, minV + rangeV/2, maxV].map((v, i) => {
+    const y = py(v);
+    return `<text x="${pad.l - 4}" y="${y + 4}" text-anchor="end" fill="#64748b" font-size="9">${Math.round(v * 10) / 10}</text>`;
+  }).join('');
 
-  // X ticks every 1 hour on the fixed 24h window
-  const step = 60 * 60 * 1000;
-  const xTicks = [];
-  for (let t = minT; t <= maxT; t += step) xTicks.push(t);
-
-  const fmt = t => {
+  // X axis labels
+  const xLabels = [times[0], times[Math.floor(times.length/2)], times[times.length-1]].map(t => {
     const d = new Date(t);
-    return d.getHours().toString().padStart(2,'0') + ':' + d.getMinutes().toString().padStart(2,'0');
-  };
+    const label = d.getHours().toString().padStart(2,'0') + ':' + d.getMinutes().toString().padStart(2,'0');
+    return `<text x="${px(t).toFixed(1)}" y="${H - 6}" text-anchor="middle" fill="#64748b" font-size="9">${label}</text>`;
+  }).join('');
 
-  // Only show every 2 hours to avoid crowding
-  const xLabels = xTicks.filter((_,i) => i % 2 === 0).map(t =>
-    `<text x="${px(t).toFixed(1)}" y="${H-3}" text-anchor="middle" fill="#64748b" font-size="9" font-family="Courier New,Courier,monospace" direction="ltr">${fmt(t)}</text>`
-  ).join('');
-
-  const gridV = xTicks.map(t =>
-    `<line x1="${px(t).toFixed(1)}" y1="${pt}" x2="${px(t).toFixed(1)}" y2="${pt+cH}" stroke="#1e2d45" stroke-width="1" stroke-dasharray="2,3"/>`
-  ).join('');
-
-  const gridH = yTicks.map(v =>
-    `<line x1="${pl}" y1="${py(v).toFixed(1)}" x2="${pl+cW}" y2="${py(v).toFixed(1)}" stroke="#1e2d45" stroke-width="1"/>`
-  ).join('');
-
+  // Latest value
   const latest = vals[vals.length-1];
+  const latestStr = `${Math.round(latest * 100) / 100} ${unit}`;
 
-  el.innerHTML = `<div style="position:relative;height:${H}px;direction:ltr">
-    <div style="position:absolute;top:2px;right:4px;font-size:12px;font-weight:600;color:${color};font-family:'IBM Plex Mono',monospace;direction:ltr">${Math.round(latest*100)/100}${unit?' '+unit:''}</div>
-    <svg xmlns="http://www.w3.org/2000/svg" width="100%" height="${H}" viewBox="0 0 ${W} ${H}" style="direction:ltr">
-      ${gridH}${gridV}
-      <path d="${pathD}" fill="none" stroke="${color}" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
-      <line x1="${pl}" y1="${pt}" x2="${pl}" y2="${pt+cH}" stroke="#2d3d55" stroke-width="1"/>
-      <line x1="${pl}" y1="${pt+cH}" x2="${pl+cW}" y2="${pt+cH}" stroke="#2d3d55" stroke-width="1"/>
-      ${yLabels}${xLabels}
+  el.innerHTML = `<div style="position:relative">
+    <div style="position:absolute;top:6px;right:8px;font-size:13px;font-weight:600;color:${color};font-family:'IBM Plex Mono',monospace">${latestStr}</div>
+    <svg width="100%" height="${H}" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none">
+      <defs>
+        <linearGradient id="g${id}" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="${color}" stop-opacity="0.15"/>
+          <stop offset="100%" stop-color="${color}" stop-opacity="0"/>
+        </linearGradient>
+      </defs>
+      <polygon points="${fillPts}" fill="url(#g${id})"/>
+      <polyline points="${pts}" fill="none" stroke="${color}" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+      ${yLabels}
+      ${xLabels}
     </svg>
   </div>`;
 }
