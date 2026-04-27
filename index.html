@@ -455,56 +455,54 @@ function drawChart(id, data, color, unit) {
     return;
   }
 
-  // Fixed dimensions
   const W = 400, H = 130;
   const pl = 46, pr = 10, pt = 18, pb = 22;
   const cW = W - pl - pr, cH = H - pt - pb;
 
-  const vals = data.map(d => d[1]);
-  const times = data.map(d => d[0]);
+  // Sort by time ascending
+  const sorted = [...data].sort((a, b) => a[0] - b[0]);
+  const vals = sorted.map(d => d[1]);
+  const times = sorted.map(d => d[0]);
+
   const minV = Math.min(...vals), maxV = Math.max(...vals);
-  const rangeV = (maxV - minV) || 1;
+  const pad = (maxV - minV) * 0.15 || 1;
+  const lo = minV - pad, hi = maxV + pad;
+  const rangeV = hi - lo;
   const minT = times[0], maxT = times[times.length - 1];
   const rangeT = (maxT - minT) || 1;
 
-  // Coordinate helpers
   const px = t => pl + ((t - minT) / rangeT) * cW;
-  const py = v => pt + cH - ((v - minV) / rangeV) * cH;
+  const py = v => pt + cH - ((v - lo) / rangeV) * cH;
 
-  // Line points
-  const pts = data.map(d => `${px(d[0]).toFixed(1)},${py(d[1]).toFixed(1)}`).join(' ');
-
-  // Fill polygon
+  const pts = sorted.map(d => `${px(d[0]).toFixed(1)},${py(d[1]).toFixed(1)}`).join(' ');
   const x0 = px(times[0]).toFixed(1);
   const xN = px(times[times.length - 1]).toFixed(1);
   const yB = (pt + cH).toFixed(1);
   const fillPts = `${x0},${yB} ${pts} ${xN},${yB}`;
 
-  // Y axis: 3 labels
-  const yTicks = [minV, minV + rangeV / 2, maxV];
+  const yTicks = [minV, (minV + maxV) / 2, maxV];
   const yLabels = yTicks.map(v =>
-    `<text x="${pl - 5}" y="${(py(v) + 3.5).toFixed(1)}" text-anchor="end" fill="#4b5563" font-size="9" font-family="monospace">${Math.round(v * 10) / 10}</text>`
+    `<text x="${pl - 4}" y="${(py(v) + 4).toFixed(1)}" text-anchor="end" fill="#4b5563" font-size="9" font-family="monospace">${Math.round(v * 10) / 10}</text>`
   ).join('');
 
-  // X axis: 3 labels
   const xTicks = [times[0], times[Math.floor(times.length / 2)], times[times.length - 1]];
-  const xLabels = xTicks.map(t => {
+  const xLabels = xTicks.map((t, i) => {
     const d = new Date(t);
     const label = d.getHours().toString().padStart(2,'0') + ':' + d.getMinutes().toString().padStart(2,'0');
-    return `<text x="${px(t).toFixed(1)}" y="${H - 5}" text-anchor="middle" fill="#4b5563" font-size="9" font-family="monospace">${label}</text>`;
+    const x = i === 0 ? pl : i === 2 ? pl + cW : px(t).toFixed(1);
+    const anchor = i === 0 ? 'start' : i === 2 ? 'end' : 'middle';
+    return `<text x="${x}" y="${H - 4}" text-anchor="${anchor}" fill="#4b5563" font-size="9" font-family="monospace">${label}</text>`;
   }).join('');
 
-  // Grid lines
-  const gridH = yTicks.map(v =>
+  const gridLines = yTicks.map(v =>
     `<line x1="${pl}" y1="${py(v).toFixed(1)}" x2="${pl + cW}" y2="${py(v).toFixed(1)}" stroke="#1e2d45" stroke-width="1"/>`
   ).join('');
 
   const latest = vals[vals.length - 1];
-  const latestLabel = `${Math.round(latest * 100) / 100}${unit ? ' ' + unit : ''}`;
 
   el.innerHTML = `
-    <div style="position:relative;height:${H}px;overflow:hidden">
-      <div style="position:absolute;top:4px;right:6px;font-size:12px;font-weight:600;color:${color};font-family:'IBM Plex Mono',monospace">${latestLabel}</div>
+    <div dir="ltr" style="position:relative;height:${H}px;overflow:hidden">
+      <div style="position:absolute;top:3px;right:4px;font-size:12px;font-weight:600;color:${color};font-family:'IBM Plex Mono',monospace">${Math.round(latest * 100) / 100}${unit ? ' ' + unit : ''}</div>
       <svg width="100%" height="${H}" viewBox="0 0 ${W} ${H}">
         <defs>
           <linearGradient id="g${id}" x1="0" y1="0" x2="0" y2="1">
@@ -512,13 +510,13 @@ function drawChart(id, data, color, unit) {
             <stop offset="100%" stop-color="${color}" stop-opacity="0"/>
           </linearGradient>
         </defs>
-        ${gridH}
+        ${gridLines}
         <polygon points="${fillPts}" fill="url(#g${id})"/>
         <polyline points="${pts}" fill="none" stroke="${color}" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+        <line x1="${pl}" y1="${pt}" x2="${pl}" y2="${pt + cH}" stroke="#2d3d55" stroke-width="1"/>
+        <line x1="${pl}" y1="${pt + cH}" x2="${pl + cW}" y2="${pt + cH}" stroke="#2d3d55" stroke-width="1"/>
         ${yLabels}
         ${xLabels}
-        <line x1="${pl}" y1="${pt}" x2="${pl}" y2="${pt + cH}" stroke="#1e2d45" stroke-width="1"/>
-        <line x1="${pl}" y1="${pt + cH}" x2="${pl + cW}" y2="${pt + cH}" stroke="#1e2d45" stroke-width="1"/>
       </svg>
     </div>`;
 }
