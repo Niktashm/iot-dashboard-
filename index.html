@@ -216,11 +216,11 @@
         </div>
       </div>
       <div style="background:#111827;border:1px solid #1e2d45;border-radius:10px;overflow:hidden">
-        <div style="padding:10px 16px;border-bottom:1px solid #1e2d45;font-size:11px;color:#00ff9d;text-transform:uppercase;letter-spacing:1px">CO2 — WB_MSW_A</div>
+        <div style="padding:10px 16px;border-bottom:1px solid #1e2d45;font-size:11px;color:#00ff9d;text-transform:uppercase;letter-spacing:1px">Air Quality — WB_MSW_A</div>
         <div id="cCO2" style="padding:8px 16px 4px;height:140px"></div>
       </div>
       <div style="background:#111827;border:1px solid #1e2d45;border-radius:10px;overflow:hidden">
-        <div style="padding:10px 16px;border-bottom:1px solid #1e2d45;font-size:11px;color:#f59e0b;text-transform:uppercase;letter-spacing:1px">Voltage L3 — Eastrone</div>
+        <div style="padding:10px 16px;border-bottom:1px solid #1e2d45;font-size:11px;color:#f59e0b;text-transform:uppercase;letter-spacing:1px">Voltage L3-L1 / Avg — Eastrone</div>
         <div id="cVolt" style="padding:8px 16px 4px;height:140px"></div>
       </div>
     </div>
@@ -301,13 +301,13 @@ async function loadWarmHistory() {
       if (msg.deviceId === 'WB_MSW_A') {
         if (k === 'Temperature' || k === 'Temperature_fine') pushH(hx.temp, v, t);
         if (k === 'Humidity' || k === 'Humidity_fine') pushH(hx.hum_a, v, t);
-        if (k === 'CO2_ppm') pushH(hx.co2_a, v, t);
+        if (k === 'Air_quality') pushH(hx.co2_a, v, t);
       }
       if (msg.deviceId === 'WB_MSW_B') {
         if (k === 'Humidity' || k === 'Humidity_fine') pushH(hx.hum_b, v, t);
       }
       if (msg.deviceId === 'Eastrone_Quadro') {
-        if (k === 'Voltage_L3') pushH(hx.volt, v, t);
+        if (k === 'Voltage_L3_L1' || k === 'Voltage_Avg_LL' || k === 'Voltage_L3') pushH(hx.volt, v, t);
       }
     });
     Object.keys(hx).forEach(k => hx[k].sort((a, b) => a[0] - b[0]));
@@ -372,13 +372,13 @@ function processData(data, json) {
     if (msg.deviceId === 'WB_MSW_A') {
       if (k === 'Temperature' || k === 'Temperature_fine') pushH(hx.temp, v, t);
       if (k === 'Humidity' || k === 'Humidity_fine') pushH(hx.hum_a, v, t);
-      if (k === 'CO2_ppm') pushH(hx.co2_a, v, t);
+      if (k === 'Air_quality') pushH(hx.co2_a, v, t);
     }
     if (msg.deviceId === 'WB_MSW_B') {
       if (k === 'Humidity' || k === 'Humidity_fine') pushH(hx.hum_b, v, t);
     }
     if (msg.deviceId === 'Eastrone_Quadro') {
-      if (k === 'Voltage_L3') pushH(hx.volt, v, t);
+      if (k === 'Voltage_L3_L1' || k === 'Voltage_Avg_LL' || k === 'Voltage_L3') pushH(hx.volt, v, t);
     }
   });
   renderSVGCharts();
@@ -443,7 +443,7 @@ function renderSVGCharts() {
   drawChart('cTemp', hx.temp, '#ff6b35', '°C');
   drawChart('cHumA', hx.hum_a, '#00d4ff', '%');
   drawChart('cHumB', hx.hum_b, '#a855f7', '%');
-  drawChart('cCO2', hx.co2_a, '#00ff9d', 'ppm');
+  drawChart('cCO2', hx.co2_a, '#00ff9d', '');
   drawChart('cVolt', hx.volt, '#f59e0b', 'V');
 }
 
