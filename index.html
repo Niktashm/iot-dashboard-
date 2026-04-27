@@ -185,6 +185,12 @@
       <div class="card">
         <div class="card-header"><span class="card-title">Alerts</span><span class="card-badge" id="alertBadge" style="color:var(--accent3);border-color:rgba(255,107,53,0.3);background:rgba(255,107,53,0.1)">—</span></div>
         <div class="alert-list" id="alertList"><div class="no-data">Waiting for data...</div></div>
+        <div style="border-top:1px solid var(--border);padding:10px 14px 4px">
+          <div style="font-size:11px;color:var(--text-dim);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px">Alert History — 24h</div>
+          <div id="alertHistory" style="max-height:160px;overflow-y:auto">
+            <div class="no-data" style="padding:12px 0">No alerts in last 24h</div>
+          </div>
+        </div>
       </div>
       <div class="card">
         <div class="card-header"><span class="card-title" id="metricsTitle">Select a device above</span><span class="card-badge">METRICS</span></div>
@@ -332,12 +338,17 @@ function processData(data, json) {
   renderTimeline(data);
   if (selectedDevice) renderCatalogMetrics(selectedDevice, metrics[selectedDevice] || {});
 
-  // Push to chart history — use timestamp from message, not now
+  // Push to chart history and alert history
   data.forEach(msg => {
     if (!msg.metrics || !msg.timestamp) return;
     const t = new Date(msg.timestamp).getTime();
     const k = Object.keys(msg.metrics)[0];
     const v = msg.metrics[k];
+    if (typeof v === 'boolean' && v === true && ALERT_KEYS.includes(k)) {
+      const exists = alertHistory.some(a => a.device === msg.deviceId && a.key === k && Math.abs(a.time - t) < 60000);
+      if (!exists) alertHistory.push({ device: msg.deviceId, key: k, time: t });
+      while (alertHistory.length && alertHistory[0].time < CUTOFF_24H()) alertHistory.shift();
+    }
     if (typeof v !== 'number') return;
     if (msg.deviceId === 'WB_MSW_A' || msg.deviceId === 'WB_MSW_B') {
       if (k === 'Temperature' || k === 'Temperature_fine') pushH(hx.temp, v, t);
@@ -503,12 +514,36 @@ function renderMetrics(deviceId, obj) {
 function renderAlerts(alerts) {
   const list = document.getElementById('alertList');
   document.getElementById('alertBadge').textContent = `${alerts.length} ALERT`;
-  if (!alerts.length) { list.innerHTML = '<div class="no-data" style="color:var(--accent2)">✓ No active alerts</div>'; return; }
-  list.innerHTML = '';
-  alerts.forEach(a => {
-    const div = document.createElement('div'); div.className = 'alert-item warn';
-    div.innerHTML = `<span>⚠️</span><div><div class="alert-text">${a.key} = true</div><div class="alert-sub">${a.device} — ${new Date(a.time).toLocaleTimeString()}</div></div>`;
-    list.appendChild(div);
+  if (!alerts.length) { list.innerHTML = '<div class="no-data" style="color:var(--accent2)">✓ No active alerts</div>'; }
+  else {
+    list.innerHTML = '';
+    alerts.forEach(a => {
+      const div = document.createElement('div'); div.className = 'alert-item warn';
+      div.innerHTML = `<span>⚠️</span><div><div class="alert-text">${a.key} = true</div><div class="alert-sub">${a.device} — ${new Date(a.time).toLocaleTimeString()}</div></div>`;
+      list.appendChild(div);
+    });
+  }
+
+  // Render alert history
+  const hist = document.getElementById('alertHistory');
+  if (!hist) return;
+  const sorted = [...alertHistory].sort((a, b) => b.time - a.time);
+  if (!sorted.length) { hist.innerHTML = '<div class="no-data" style="padding:12px 0">No alerts in last 24h</div>'; return; }
+  hist.innerHTML = '';
+  sorted.forEach(a => {
+    const d = new Date(a.time);
+    const timeStr = d.getHours().toString().padStart(2,'0') + ':' + d.getMinutes().toString().padStart(2,'0');
+    const dateStr = d.toLocaleDateString([], {month:'short', day:'numeric'});
+    const color = DEVICE_COLORS[a.device] || '#ff6b35';
+    const row = document.createElement('div');
+    row.style.cssText = 'display:flex;align-items:center;gap:8px;padding:6px 4px;border-bottom:1px solid var(--border);font-size:11px';
+    row.innerHTML = `
+      <span style="color:var(--accent3);flex-shrink:0">⚠</span>
+      <span style="color:var(--text-dim);flex-shrink:0;width:80px">${timeStr} ${dateStr}</span>
+      <span style="color:${color};flex-shrink:0;width:80px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${a.device.replace('_Quadro','').replace('_test','')}</span>
+      <span style="color:var(--accent3);flex:1">${a.key}</span>
+    `;
+    hist.appendChild(row);
   });
 }
 
@@ -527,6 +562,7 @@ function renderTimeline(data) {
 
 // ═══ CHART HISTORY ═══
 const hx = { temp: [], hum: [], air: [], volt: [] };
+const alertHistory = []; // { device, key, time }
 const CUTOFF_24H = () => Date.now() - 24 * 60 * 60 * 1000;
 
 function pushH(arr, val, t) {
@@ -559,6 +595,11 @@ async function loadWarmHistory() {
       }
 
       // Push numeric values to chart history
+      if (typeof v === 'boolean' && v === true && ALERT_KEYS.includes(k)) {
+        // Add to alert history if not duplicate
+        const exists = alertHistory.some(a => a.device === msg.deviceId && a.key === k && Math.abs(a.time - t) < 60000);
+        if (!exists) alertHistory.push({ device: msg.deviceId, key: k, time: t });
+      }
       if (typeof v !== 'number') return;
       if (msg.deviceId === 'WB_MSW_A' || msg.deviceId === 'WB_MSW_B') {
         if (k === 'Temperature' || k === 'Temperature_fine') pushH(hx.temp, v, t);
@@ -569,6 +610,7 @@ async function loadWarmHistory() {
     });
 
     Object.keys(hx).forEach(k => hx[k].sort((a, b) => a[0] - b[0]));
+    console.log('Warm history loaded:', 'temp='+hx.temp.length, 'hum='+hx.hum.length, 'air='+hx.air.length, 'volt='+hx.volt.length, 'total='+data.length);
 
     // Rebuild metrics from state and re-render everything
     const devices = {}, metrics = {};
@@ -580,6 +622,7 @@ async function loadWarmHistory() {
 
     renderDevices(devices, metrics);
     renderCharts();
+    renderAlerts([]);
     if (selectedDevice) renderCatalogMetrics(selectedDevice, metrics[selectedDevice] || {});
 
   } catch(e) {}
