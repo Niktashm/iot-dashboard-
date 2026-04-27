@@ -454,14 +454,14 @@ function drawChart(id, data, color, unit) {
     el.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100%;font-size:11px;color:#334155;font-family:IBM Plex Mono,monospace">Collecting data...</div>';
     return;
   }
-  const W = el.offsetWidth || 300, H = 120;
+  const W = el.clientWidth || 300, H = 120;
   const vals = data.map(d => d[1]);
   const times = data.map(d => d[0]);
   const minV = Math.min(...vals), maxV = Math.max(...vals);
   const rangeV = maxV - minV || 1;
   const minT = times[0], maxT = times[times.length - 1];
   const rangeT = maxT - minT || 1;
-  const pad = { t: 10, r: 8, b: 24, l: 42 };
+  const pad = { t: 10, r: 8, b: 24, l: 44 };
   const cW = W - pad.l - pad.r, cH = H - pad.t - pad.b;
   const px = t => pad.l + ((t - minT) / rangeT) * cW;
   const py = v => pad.t + cH - ((v - minV) / rangeV) * cH;
@@ -475,9 +475,9 @@ function drawChart(id, data, color, unit) {
     return `<text x="${px(t).toFixed(1)}" y="${H - 6}" text-anchor="middle" fill="#64748b" font-size="9">${d.getHours().toString().padStart(2,'0')}:${d.getMinutes().toString().padStart(2,'0')}</text>`;
   }).join('');
   const latest = vals[vals.length - 1];
-  el.innerHTML = `<div style="position:relative">
-    <div style="position:absolute;top:4px;right:4px;font-size:12px;font-weight:600;color:${color};font-family:'IBM Plex Mono',monospace">${Math.round(latest * 100) / 100} ${unit}</div>
-    <svg width="100%" height="${H}" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none">
+  el.innerHTML = `<div style="position:relative;width:100%;height:${H}px">
+    <div style="position:absolute;top:4px;right:4px;font-size:12px;font-weight:600;color:${color};font-family:'IBM Plex Mono',monospace;z-index:1">${Math.round(latest * 100) / 100}${unit ? ' ' + unit : ''}</div>
+    <svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" style="display:block">
       <defs><linearGradient id="g${id}" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="${color}" stop-opacity="0.15"/><stop offset="100%" stop-color="${color}" stop-opacity="0"/></linearGradient></defs>
       <polygon points="${fillPts}" fill="url(#g${id})"/>
       <polyline points="${pts}" fill="none" stroke="${color}" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
