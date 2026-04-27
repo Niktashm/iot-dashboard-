@@ -364,15 +364,23 @@ function processData(data, json) {
   if (selectedDevice && metrics[selectedDevice]) renderMetrics(selectedDevice, metrics[selectedDevice]);
 
   // Push new live points to history
-  const now = Date.now();
-  const wa = metrics['WB_MSW_A'] || {};
-  const wb = metrics['WB_MSW_B'] || {};
-  const ea = metrics['Eastrone_Quadro'] || {};
-  pushH(hx.temp, wa.Temperature || wa.Temperature_fine, now);
-  pushH(hx.hum_a, wa.Humidity || wa.Humidity_fine, now);
-  pushH(hx.hum_b, wb.Humidity || wb.Humidity_fine, now);
-  pushH(hx.co2_a, wa.CO2_ppm, now);
-  pushH(hx.volt, ea.Voltage_L3, now);
+  data.forEach(msg => {
+    if (!msg.metrics) return;
+    const t = new Date(msg.timestamp).getTime();
+    const k = Object.keys(msg.metrics)[0];
+    const v = msg.metrics[k];
+    if (msg.deviceId === 'WB_MSW_A') {
+      if (k === 'Temperature' || k === 'Temperature_fine') pushH(hx.temp, v, t);
+      if (k === 'Humidity' || k === 'Humidity_fine') pushH(hx.hum_a, v, t);
+      if (k === 'CO2_ppm') pushH(hx.co2_a, v, t);
+    }
+    if (msg.deviceId === 'WB_MSW_B') {
+      if (k === 'Humidity' || k === 'Humidity_fine') pushH(hx.hum_b, v, t);
+    }
+    if (msg.deviceId === 'Eastrone_Quadro') {
+      if (k === 'Voltage_L3') pushH(hx.volt, v, t);
+    }
+  });
   renderSVGCharts();
 }
 
