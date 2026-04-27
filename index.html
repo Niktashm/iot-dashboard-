@@ -6,7 +6,7 @@
 <title>IoT Edge Dashboard — Live</title>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&display=swap');
-
+ 
   :root {
     --bg: #0a0e1a;
     --surface: #111827;
@@ -20,16 +20,16 @@
     --text: #e2e8f0;
     --text-dim: #64748b;
   }
-
+ 
   * { margin: 0; padding: 0; box-sizing: border-box; }
   body { background: var(--bg); color: var(--text); font-family: 'IBM Plex Mono', monospace; min-height: 100vh; }
-
+ 
   body::before {
     content: ''; position: fixed; inset: 0;
     background-image: linear-gradient(rgba(0,212,255,0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(0,212,255,0.03) 1px, transparent 1px);
     background-size: 40px 40px; pointer-events: none; z-index: 0;
   }
-
+ 
   /* LOGIN */
   .login-page { position: fixed; inset: 0; z-index: 100; display: flex; align-items: center; justify-content: center; background: var(--bg); }
   .login-box { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 40px; width: 420px; position: relative; overflow: hidden; }
@@ -45,17 +45,17 @@
   .login-btn:hover { opacity: 0.85; }
   .login-error { background: rgba(255,107,53,0.1); border: 1px solid rgba(255,107,53,0.3); border-radius: 8px; padding: 12px 16px; font-size: 13px; color: var(--accent3); margin-top: 16px; display: none; }
   .login-error.show { display: block; }
-
+ 
   /* DASHBOARD */
   .dashboard { display: none; }
   .dashboard.show { display: block; }
   .container { position: relative; z-index: 1; padding: 24px; max-width: 1400px; margin: 0 auto; }
-
+ 
   header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 24px; padding-bottom: 20px; border-bottom: 1px solid var(--border); }
   .header-left h1 { font-size: 20px; color: var(--accent); letter-spacing: 2px; text-transform: uppercase; }
   .header-left p { font-size: 12px; color: var(--text-dim); margin-top: 4px; }
   .header-right { display: flex; align-items: center; gap: 12px; }
-
+ 
   .status-pill { display: flex; align-items: center; gap: 8px; padding: 8px 16px; border-radius: 100px; font-size: 12px; border: 1px solid; }
   .status-pill.live { background: rgba(0,255,157,0.1); border-color: rgba(0,255,157,0.3); color: var(--accent2); }
   .status-pill.loading { background: rgba(245,158,11,0.1); border-color: rgba(245,158,11,0.3); color: var(--accent5); }
@@ -63,11 +63,11 @@
   .pulse { width: 8px; height: 8px; border-radius: 50%; animation: pulse 2s infinite; }
   .live .pulse { background: var(--accent2); } .loading .pulse { background: var(--accent5); } .error .pulse { background: var(--accent3); animation: none; }
   @keyframes pulse { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.4; transform: scale(0.7); } }
-
+ 
   .logout-btn { padding: 7px 16px; border-radius: 6px; border: 1px solid var(--border); background: transparent; color: var(--text-dim); font-family: 'IBM Plex Mono', monospace; font-size: 12px; cursor: pointer; transition: all 0.2s; }
   .logout-btn:hover { border-color: var(--accent3); color: var(--accent3); }
   .last-update { font-size: 11px; color: var(--text-dim); }
-
+ 
   .stats-row { display: grid; grid-template-columns: repeat(5, 1fr); gap: 14px; margin-bottom: 24px; }
   .stat-card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 16px 20px; position: relative; overflow: hidden; }
   .stat-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px; }
@@ -79,20 +79,20 @@
   .stat-card.blue .stat-value { color: var(--accent); } .stat-card.green .stat-value { color: var(--accent2); }
   .stat-card.orange .stat-value { color: var(--accent3); } .stat-card.purple .stat-value { color: var(--accent4); }
   .stat-card.yellow .stat-value { color: var(--accent5); }
-
+ 
   .main-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
   .card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
   .card-header { padding: 14px 18px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; }
   .card-title { font-size: 12px; color: var(--text-dim); text-transform: uppercase; letter-spacing: 1px; }
   .card-badge { font-size: 11px; padding: 3px 10px; border-radius: 100px; background: rgba(0,212,255,0.1); color: var(--accent); border: 1px solid rgba(0,212,255,0.2); }
-
+ 
   .device-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; padding: 14px; }
   .device-item { background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; padding: 12px; cursor: pointer; transition: all 0.2s; }
   .device-item:hover { border-color: var(--accent); } .device-item.active { border-color: var(--accent); background: rgba(0,212,255,0.05); }
   .device-name { font-size: 11px; color: var(--text); margin-bottom: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .device-count { font-size: 22px; font-weight: 600; } .device-sub { font-size: 10px; color: var(--text-dim); }
   .device-dot { width: 5px; height: 5px; border-radius: 50%; display: inline-block; margin-left: 5px; animation: pulse 2s infinite; }
-
+ 
   .metrics-list { padding: 4px 0; max-height: 320px; overflow-y: auto; }
   .metrics-list::-webkit-scrollbar { width: 4px; } .metrics-list::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
   .metric-row { display: flex; align-items: center; justify-content: space-between; padding: 10px 18px; border-bottom: 1px solid var(--border); transition: background 0.15s; }
@@ -100,22 +100,22 @@
   .metric-name { font-size: 12px; color: var(--text-dim); } .metric-val { font-size: 14px; font-weight: 600; }
   .metric-val.num { color: var(--accent); } .metric-val.bool-true { color: var(--accent2); }
   .metric-val.bool-false { color: var(--text-dim); } .metric-val.alert { color: var(--accent3); }
-
+ 
   .alert-list { padding: 12px; }
   .alert-item { display: flex; align-items: flex-start; gap: 12px; padding: 12px 14px; border-radius: 8px; margin-bottom: 10px; }
   .alert-item.warn { background: rgba(255,107,53,0.1); border: 1px solid rgba(255,107,53,0.3); }
   .alert-text { font-size: 13px; } .alert-item.warn .alert-text { color: var(--accent3); }
   .alert-sub { font-size: 10px; color: var(--text-dim); margin-top: 3px; }
-
+ 
   .timeline { padding: 14px 18px; max-height: 300px; overflow-y: auto; }
   .tl-item { display: flex; gap: 12px; margin-bottom: 12px; align-items: flex-start; }
   .tl-time { font-size: 10px; color: var(--text-dim); width: 75px; flex-shrink: 0; padding-top: 2px; }
   .tl-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; margin-top: 4px; }
   .tl-content { flex: 1; font-size: 12px; color: var(--text); line-height: 1.5; }
   .tl-device { font-size: 10px; color: var(--text-dim); margin-top: 2px; }
-
+ 
   .no-data { text-align: center; padding: 40px 20px; color: var(--text-dim); font-size: 13px; }
-
+ 
   @media (max-width: 768px) {
     .stats-row { grid-template-columns: repeat(2, 1fr); }
     .main-grid { grid-template-columns: 1fr; }
@@ -125,7 +125,7 @@
 </style>
 </head>
 <body>
-
+ 
 <!-- LOGIN -->
 <div class="login-page" id="loginPage">
   <div class="login-box">
@@ -149,11 +149,11 @@
     <div class="login-error" id="loginError">Invalid credentials. Please try again.</div>
   </div>
 </div>
-
+ 
 <!-- DASHBOARD -->
 <div class="dashboard" id="dashboard">
   <div class="container">
-
+ 
     <header>
       <div class="header-left">
         <h1>Edge Forwarder Dashboard</h1>
@@ -168,7 +168,7 @@
         <button class="logout-btn" onclick="doLogout()">⏏ Logout</button>
       </div>
     </header>
-
+ 
     <div class="stats-row">
       <div class="stat-card blue"><div class="stat-label">Devices</div><div class="stat-value" id="statDevices">—</div></div>
       <div class="stat-card green"><div class="stat-label">Messages</div><div class="stat-value" id="statMessages">—</div></div>
@@ -176,7 +176,7 @@
       <div class="stat-card purple"><div class="stat-label">Metrics</div><div class="stat-value" id="statMetrics">—</div></div>
       <div class="stat-card yellow"><div class="stat-label">Data Quality</div><div class="stat-value" id="statQuality">—</div></div>
     </div>
-
+ 
     <div class="main-grid">
       <div class="card">
         <div class="card-header"><span class="card-title">Device Status</span><span class="card-badge" id="deviceBadge">—</span></div>
@@ -195,49 +195,23 @@
         <div class="timeline" id="timeline"><div class="no-data">Waiting for data...</div></div>
       </div>
     </div>
-
-    <!-- CHARTS -->
-    <div style="display:flex;align-items:center;gap:16px;margin:32px 0 20px">
-      <div style="flex:1;height:1px;background:#1e2d45"></div>
-      <div style="font-size:11px;color:#a855f7;text-transform:uppercase;letter-spacing:2px;padding:5px 14px;border:1px solid rgba(168,85,247,0.3);border-radius:100px;background:rgba(168,85,247,0.05)">📊 Last 24 Hours</div>
-      <div style="flex:1;height:1px;background:#1e2d45"></div>
-    </div>
-
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-bottom:32px">
-      <div style="background:#111827;border:1px solid #1e2d45;border-radius:10px;overflow:hidden">
-        <div style="padding:10px 16px;border-bottom:1px solid #1e2d45;font-size:11px;color:#ff6b35;text-transform:uppercase;letter-spacing:1px">Temperature — WB_MSW A/B</div>
-        <div id="cTemp" style="padding:8px 16px 4px;height:140px"></div>
-      </div>
-      <div style="background:#111827;border:1px solid #1e2d45;border-radius:10px;overflow:hidden">
-        <div style="padding:10px 16px;border-bottom:1px solid #1e2d45;font-size:11px;color:#00d4ff;text-transform:uppercase;letter-spacing:1px">Humidity — WB_MSW A/B</div>
-        <div id="cHum" style="padding:8px 16px 4px;height:140px"></div>
-      </div>
-      <div style="background:#111827;border:1px solid #1e2d45;border-radius:10px;overflow:hidden">
-        <div style="padding:10px 16px;border-bottom:1px solid #1e2d45;font-size:11px;color:#00ff9d;text-transform:uppercase;letter-spacing:1px">CO2 / Air Quality — WB_MSW_A</div>
-        <div id="cAir" style="padding:8px 16px 4px;height:140px"></div>
-      </div>
-      <div style="background:#111827;border:1px solid #1e2d45;border-radius:10px;overflow:hidden">
-        <div style="padding:10px 16px;border-bottom:1px solid #1e2d45;font-size:11px;color:#f59e0b;text-transform:uppercase;letter-spacing:1px">Voltage — Eastrone</div>
-        <div id="cVolt" style="padding:8px 16px 4px;height:140px"></div>
-      </div>
-    </div>
-
+ 
   </div>
 </div>
-
+ 
 <script>
 let interval = null;
 let totalMessages = 0;
 let selectedDevice = null;
 let apiUrl = '', tenantId = '', apiKey = '';
-
+ 
 const ALERT_KEYS = ['DALI_Bus_Error', 'Watchdog_Event', 'PowerUp_Event'];
 const DEVICE_COLORS = {
   'WB_MSW_A': '#00d4ff', 'WB_MSW_B': '#00bdff',
   'Eastrone_Quadro': '#f59e0b', 'SENECA_test_Quadro': '#a855f7',
   'Resi_dali_SIO_QuadroG': '#00ff9d', 'Dat3130_QuadroC': '#ff6b35'
 };
-
+ 
 async function doLogin() {
   const url = document.getElementById('loginUrl').value.trim();
   const tenant = document.getElementById('loginTenant').value.trim();
@@ -251,15 +225,14 @@ async function doLogin() {
     document.getElementById('loginPage').style.display = 'none';
     document.getElementById('dashboard').classList.add('show');
     startFetching();
-    loadWarmHistory();
   } catch { showLoginError('Cannot connect. Check the URL and try again.'); }
 }
-
+ 
 function showLoginError(msg) {
   const el = document.getElementById('loginError');
   el.textContent = msg; el.classList.add('show');
 }
-
+ 
 function doLogout() {
   clearInterval(interval); interval = null;
   totalMessages = 0; selectedDevice = null;
@@ -267,18 +240,18 @@ function doLogout() {
   document.getElementById('loginPage').style.display = 'flex';
   document.getElementById('loginError').classList.remove('show');
 }
-
+ 
 function startFetching() {
   fetchData();
   interval = setInterval(fetchData, 10000);
 }
-
+ 
 function setStatus(type, text) {
   const pill = document.getElementById('statusPill');
   pill.className = `status-pill ${type}`;
   document.getElementById('statusText').textContent = text;
 }
-
+ 
 async function fetchData() {
   try {
     setStatus('loading', 'Fetching...');
@@ -292,7 +265,7 @@ async function fetchData() {
     document.getElementById('lastUpdate').textContent = 'Updated: ' + new Date().toLocaleTimeString();
   } catch { setStatus('error', 'Error'); }
 }
-
+ 
 function processData(data, json) {
   if (!data.length) return;
   document.getElementById('gatewayInfo').textContent =
@@ -314,9 +287,8 @@ function processData(data, json) {
   document.getElementById('deviceBadge').textContent = `${Object.keys(devices).length} ONLINE`;
   renderDevices(devices, metrics); renderAlerts(alerts); renderTimeline(data);
   if (selectedDevice && metrics[selectedDevice]) renderMetrics(selectedDevice, metrics[selectedDevice]);
-  pushLive(data);
 }
-
+ 
 function renderDevices(devices, metrics) {
   const grid = document.getElementById('deviceGrid'); grid.innerHTML = '';
   Object.keys(devices).forEach(dev => {
@@ -329,7 +301,7 @@ function renderDevices(devices, metrics) {
     grid.appendChild(div);
   });
 }
-
+ 
 function renderMetrics(deviceId, obj) {
   document.getElementById('metricsTitle').textContent = deviceId;
   const list = document.getElementById('metricsList'); list.innerHTML = '';
@@ -344,7 +316,7 @@ function renderMetrics(deviceId, obj) {
     list.appendChild(row);
   });
 }
-
+ 
 function renderAlerts(alerts) {
   const list = document.getElementById('alertList');
   document.getElementById('alertBadge').textContent = `${alerts.length} ALERT`;
@@ -356,7 +328,7 @@ function renderAlerts(alerts) {
     list.appendChild(div);
   });
 }
-
+ 
 function renderTimeline(data) {
   const tl = document.getElementById('timeline'); tl.innerHTML = '';
   [...data].reverse().slice(0, 15).forEach(msg => {
@@ -369,133 +341,7 @@ function renderTimeline(data) {
     tl.appendChild(item);
   });
 }
-
-// ═══ CHART HISTORY ═══
-const hx = { temp: [], hum: [], air: [], volt: [] };
-const CUTOFF_24H = () => Date.now() - 24 * 60 * 60 * 1000;
-
-function pushH(arr, val, t) {
-  if (typeof val !== 'number' || isNaN(val)) return;
-  arr.push([t, val]);
-  while (arr.length && arr[0][0] < CUTOFF_24H()) arr.shift();
-}
-
-async function loadWarmHistory() {
-  try {
-    const res = await fetch(`${apiUrl}?tenantId=${encodeURIComponent(tenantId)}&apiKey=${encodeURIComponent(apiKey)}&mode=warm`);
-    if (!res.ok) return;
-    const json = await res.json();
-    (json.data || []).forEach(msg => {
-      if (!msg.metrics || !msg.timestamp) return;
-      const t = new Date(msg.timestamp).getTime();
-      if (t < CUTOFF_24H()) return;
-      const k = Object.keys(msg.metrics)[0];
-      const v = msg.metrics[k];
-      if (typeof v !== 'number') return;
-      if (msg.deviceId === 'WB_MSW_A' || msg.deviceId === 'WB_MSW_B') {
-        if (k === 'Temperature' || k === 'Temperature_fine') pushH(hx.temp, v, t);
-        if (k === 'Humidity' || k === 'Humidity_fine') pushH(hx.hum, v, t);
-      }
-      if (msg.deviceId === 'WB_MSW_A' && (k === 'Air_quality' || k === 'air_quality' || k === 'AirQuality')) pushH(hx.air, v, t);
-      if (msg.deviceId === 'Eastrone_Quadro' && (k === 'Voltage_L3_L1' || k === 'Voltage_Avg_LL' || k === 'Voltage_L3')) pushH(hx.volt, v, t);
-    });
-    Object.keys(hx).forEach(k => hx[k].sort((a, b) => a[0] - b[0]));
-    renderCharts();
-  } catch(e) {}
-}
-
-function pushLive(data) {
-  data.forEach(msg => {
-    if (!msg.metrics || !msg.timestamp) return;
-    const t = new Date(msg.timestamp).getTime();
-    const k = Object.keys(msg.metrics)[0];
-    const v = msg.metrics[k];
-    if (typeof v !== 'number') return;
-    if (msg.deviceId === 'WB_MSW_A' || msg.deviceId === 'WB_MSW_B') {
-      if (k === 'Temperature' || k === 'Temperature_fine') pushH(hx.temp, v, t);
-      if (k === 'Humidity' || k === 'Humidity_fine') pushH(hx.hum, v, t);
-    }
-    if (msg.deviceId === 'WB_MSW_A' && (k === 'Air_quality' || k === 'air_quality' || k === 'AirQuality')) pushH(hx.air, v, t);
-    if (msg.deviceId === 'Eastrone_Quadro' && (k === 'Voltage_L3_L1' || k === 'Voltage_Avg_LL' || k === 'Voltage_L3')) pushH(hx.volt, v, t);
-  });
-  renderCharts();
-}
-
-function renderCharts() {
-  drawChart('cTemp', hx.temp, '#ff6b35', '°C');
-  drawChart('cHum',  hx.hum,  '#00d4ff', '%');
-  drawChart('cAir',  hx.air,  '#00ff9d', '');
-  drawChart('cVolt', hx.volt, '#f59e0b', 'V');
-}
-
-function drawChart(id, data, color, unit) {
-  const el = document.getElementById(id);
-  if (!el) return;
-  if (data.length < 2) {
-    el.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:120px;font-size:11px;color:#334155">Collecting data...</div>';
-    return;
-  }
-  const W = 400, H = 120;
-  const pl = 42, pr = 8, pt = 14, pb = 22;
-  const cW = W - pl - pr, cH = H - pt - pb;
-
-  const sorted = [...data].sort((a, b) => a[0] - b[0]);
-  const vals = sorted.map(d => d[1]);
-  const times = sorted.map(d => d[0]);
-
-  const minV = Math.min(...vals), maxV = Math.max(...vals);
-  const vp = (maxV - minV) * 0.15 || 1;
-  const lo = minV - vp, hi = maxV + vp, rv = hi - lo;
-  const minT = times[0], maxT = times[times.length-1];
-  const rt = (maxT - minT) || 1;
-
-  const px = t => pl + ((t - minT) / rt) * cW;
-  const py = v => pt + cH - ((v - lo) / rv) * cH;
-
-  const pts = sorted.map(d => `${px(d[0]).toFixed(1)},${py(d[1]).toFixed(1)}`).join(' ');
-  const fill = `${pl},${pt+cH} ${pts} ${pl+cW},${pt+cH}`;
-
-  // Y: min → mid → max (bottom to top)
-  const yT = [minV, (minV+maxV)/2, maxV];
-  const yL = yT.map(v =>
-    `<text x="${pl-4}" y="${(py(v)+3.5).toFixed(1)}" text-anchor="end" fill="#64748b" font-size="9" font-family="Courier New,monospace">${Math.round(v*10)/10}</text>`
-  ).join('');
-
-  // X: every 30 minutes
-  const step = 30 * 60 * 1000;
-  const firstTick = Math.ceil(minT / step) * step;
-  const xTicks = [];
-  for (let t = firstTick; t <= maxT; t += step) xTicks.push(t);
-  if (!xTicks.length || xTicks[0] > minT + step * 0.5) xTicks.unshift(minT);
-  if (xTicks[xTicks.length-1] < maxT - step * 0.5) xTicks.push(maxT);
-
-  const xL = xTicks.map((t, i) => {
-    const d = new Date(t);
-    const lb = d.getHours().toString().padStart(2,'0') + ':' + d.getMinutes().toString().padStart(2,'0');
-    const xpos = Math.max(pl, Math.min(pl+cW, px(t)));
-    const a = i === 0 ? 'start' : i === xTicks.length-1 ? 'end' : 'middle';
-    return `<text x="${xpos.toFixed(1)}" y="${H-3}" text-anchor="${a}" fill="#64748b" font-size="9" font-family="Courier New,monospace">${lb}</text>`;
-  }).join('');
-
-  const gridH = yT.map(v => `<line x1="${pl}" y1="${py(v).toFixed(1)}" x2="${pl+cW}" y2="${py(v).toFixed(1)}" stroke="#1e2d45" stroke-width="1"/>`).join('');
-  const gridV = xTicks.map(t => `<line x1="${px(t).toFixed(1)}" y1="${pt}" x2="${px(t).toFixed(1)}" y2="${pt+cH}" stroke="#1e2d45" stroke-width="1" stroke-dasharray="2,3"/>`).join('');
-
-  const latest = vals[vals.length-1];
-
-  el.innerHTML = `<div style="position:relative;height:${H}px;direction:ltr">
-    <div style="position:absolute;top:2px;right:4px;font-size:12px;font-weight:600;color:${color};font-family:'IBM Plex Mono',monospace">${Math.round(latest*100)/100}${unit?' '+unit:''}</div>
-    <svg xmlns="http://www.w3.org/2000/svg" width="100%" height="${H}" viewBox="0 0 ${W} ${H}" style="direction:ltr">
-      <defs><linearGradient id="g${id}" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="${color}" stop-opacity="0.15"/><stop offset="100%" stop-color="${color}" stop-opacity="0"/></linearGradient></defs>
-      ${gridH}${gridV}
-      <polygon points="${fill}" fill="url(#g${id})"/>
-      <polyline points="${pts}" fill="none" stroke="${color}" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
-      <line x1="${pl}" y1="${pt}" x2="${pl}" y2="${pt+cH}" stroke="#2d3d55" stroke-width="1"/>
-      <line x1="${pl}" y1="${pt+cH}" x2="${pl+cW}" y2="${pt+cH}" stroke="#2d3d55" stroke-width="1"/>
-      ${yL}${xL}
-    </svg>
-  </div>`;
-}
-
+ 
 document.addEventListener('keydown', e => {
   if (e.key === 'Enter' && document.getElementById('loginPage').style.display !== 'none') doLogin();
 });
