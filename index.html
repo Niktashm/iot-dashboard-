@@ -594,12 +594,13 @@ async function loadWarmHistory() {
         lastSeen[msg.deviceId] = Math.max(lastSeen[msg.deviceId] || 0, t);
       }
 
-      // Push numeric values to chart history
+      // Alert history from warm data
       if (typeof v === 'boolean' && v === true && ALERT_KEYS.includes(k)) {
-        // Add to alert history if not duplicate
         const exists = alertHistory.some(a => a.device === msg.deviceId && a.key === k && Math.abs(a.time - t) < 60000);
         if (!exists) alertHistory.push({ device: msg.deviceId, key: k, time: t });
       }
+
+      // Push numeric values to chart history
       if (typeof v !== 'number') return;
       if (msg.deviceId === 'WB_MSW_A' || msg.deviceId === 'WB_MSW_B') {
         if (k === 'Temperature' || k === 'Temperature_fine') pushH(hx.temp, v, t);
