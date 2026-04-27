@@ -196,6 +196,31 @@
       </div>
     </div>
 
+    <!-- CHARTS -->
+    <div style="display:flex;align-items:center;gap:16px;margin:32px 0 20px">
+      <div style="flex:1;height:1px;background:#1e2d45"></div>
+      <div style="font-size:11px;color:#a855f7;text-transform:uppercase;letter-spacing:2px;padding:5px 14px;border:1px solid rgba(168,85,247,0.3);border-radius:100px;background:rgba(168,85,247,0.05)">📊 Last 24 Hours</div>
+      <div style="flex:1;height:1px;background:#1e2d45"></div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-bottom:32px">
+      <div style="background:#111827;border:1px solid #1e2d45;border-radius:10px;overflow:hidden">
+        <div style="padding:10px 16px;border-bottom:1px solid #1e2d45;font-size:11px;color:#ff6b35;text-transform:uppercase;letter-spacing:1px">Temperature — WB_MSW A/B</div>
+        <div id="cTemp" style="padding:8px 16px 4px;height:140px"></div>
+      </div>
+      <div style="background:#111827;border:1px solid #1e2d45;border-radius:10px;overflow:hidden">
+        <div style="padding:10px 16px;border-bottom:1px solid #1e2d45;font-size:11px;color:#00d4ff;text-transform:uppercase;letter-spacing:1px">Humidity — WB_MSW A/B</div>
+        <div id="cHum" style="padding:8px 16px 4px;height:140px"></div>
+      </div>
+      <div style="background:#111827;border:1px solid #1e2d45;border-radius:10px;overflow:hidden">
+        <div style="padding:10px 16px;border-bottom:1px solid #1e2d45;font-size:11px;color:#00ff9d;text-transform:uppercase;letter-spacing:1px">CO2 / Air Quality — WB_MSW_A</div>
+        <div id="cAir" style="padding:8px 16px 4px;height:140px"></div>
+      </div>
+      <div style="background:#111827;border:1px solid #1e2d45;border-radius:10px;overflow:hidden">
+        <div style="padding:10px 16px;border-bottom:1px solid #1e2d45;font-size:11px;color:#f59e0b;text-transform:uppercase;letter-spacing:1px">Voltage — Eastrone</div>
+        <div id="cVolt" style="padding:8px 16px 4px;height:140px"></div>
+      </div>
+    </div>
+
   </div>
 </div>
 
@@ -225,6 +250,7 @@ async function doLogin() {
     document.getElementById('loginPage').style.display = 'none';
     document.getElementById('dashboard').classList.add('show');
     startFetching();
+    loadWarmHistory();
   } catch { showLoginError('Cannot connect. Check the URL and try again.'); }
 }
 
@@ -236,6 +262,8 @@ function showLoginError(msg) {
 function doLogout() {
   clearInterval(interval); interval = null;
   totalMessages = 0; selectedDevice = null;
+  Object.keys(deviceState).forEach(k => delete deviceState[k]);
+  Object.keys(lastSeen).forEach(k => delete lastSeen[k]);
   document.getElementById('dashboard').classList.remove('show');
   document.getElementById('loginPage').style.display = 'flex';
   document.getElementById('loginError').classList.remove('show');
@@ -269,24 +297,57 @@ async function fetchData() {
 function processData(data, json) {
   if (!data.length) return;
   document.getElementById('gatewayInfo').textContent =
-    `${json.gateway || 'unknown'} / ${tenantId} / ${json.protocol || 'unknown'}`;
-  const devices = {}, metrics = {}, alerts = [];
-  data.forEach(msg => {
-    const dev = msg.deviceId;
-    if (!devices[dev]) devices[dev] = 0; devices[dev]++;
-    if (!metrics[dev]) metrics[dev] = {};
-    const k = Object.keys(msg.metrics)[0], v = msg.metrics[k];
-    metrics[dev][k] = v;
-    if (ALERT_KEYS.includes(k) && v === true) alerts.push({ device: dev, key: k, time: msg.timestamp });
+    `${json.gateway || data[0]?.gatewayId || 'unknown'} / ${tenantId} / ${json.protocol || data[0]?.protocol || 'unknown'}`;
+
+  // Update persistent state
+  updateState(data);
+
+  // Build devices and alerts from current state
+  const devices = {}, alerts = [];
+  Object.entries(deviceState).forEach(([dev, tags]) => {
+    devices[dev] = Object.keys(tags).length;
+    Object.entries(tags).forEach(([k, {val}]) => {
+      if (ALERT_KEYS.includes(k) && val === true) {
+        alerts.push({ device: dev, key: k, time: new Date(deviceState[dev][k].ts).toISOString() });
+      }
+    });
   });
-  document.getElementById('statDevices').textContent = Object.keys(devices).length;
+
+  // Build flat metrics from state (latest value per tag)
+  const metrics = {};
+  Object.entries(deviceState).forEach(([dev, tags]) => {
+    metrics[dev] = {};
+    Object.entries(tags).forEach(([k, {val}]) => { metrics[dev][k] = val; });
+  });
+
+  totalMessages += data.length;
+  document.getElementById('statDevices').textContent = Object.keys(deviceState).length;
   document.getElementById('statMessages').textContent = totalMessages;
   document.getElementById('statAlerts').textContent = alerts.length;
   document.getElementById('statMetrics').textContent = Object.values(metrics).reduce((s, m) => s + Object.keys(m).length, 0);
   document.getElementById('statQuality').textContent = 'GOOD';
-  document.getElementById('deviceBadge').textContent = `${Object.keys(devices).length} ONLINE`;
-  renderDevices(devices, metrics); renderAlerts(alerts); renderTimeline(data);
-  if (selectedDevice && metrics[selectedDevice] !== undefined) renderCatalogMetrics(selectedDevice, metrics[selectedDevice] || {});
+  document.getElementById('deviceBadge').textContent = `${Object.keys(deviceState).length} ONLINE`;
+
+  renderDevices(devices, metrics);
+  renderAlerts(alerts);
+  renderTimeline(data);
+  if (selectedDevice) renderCatalogMetrics(selectedDevice, metrics[selectedDevice] || {});
+
+  // Push to chart history — use timestamp from message, not now
+  data.forEach(msg => {
+    if (!msg.metrics || !msg.timestamp) return;
+    const t = new Date(msg.timestamp).getTime();
+    const k = Object.keys(msg.metrics)[0];
+    const v = msg.metrics[k];
+    if (typeof v !== 'number') return;
+    if (msg.deviceId === 'WB_MSW_A' || msg.deviceId === 'WB_MSW_B') {
+      if (k === 'Temperature' || k === 'Temperature_fine') pushH(hx.temp, v, t);
+      if (k === 'Humidity' || k === 'Humidity_fine') pushH(hx.hum, v, t);
+    }
+    if (msg.deviceId === 'WB_MSW_A' && (k === 'Air_quality' || k === 'CO2_ppm')) pushH(hx.air, v, t);
+    if (msg.deviceId === 'Eastrone_Quadro' && (k === 'Voltage_L3_L1' || k === 'Voltage_Avg_LL' || k === 'Voltage_L3')) pushH(hx.volt, v, t);
+  });
+  renderCharts();
 }
 
 // ═══ DEVICE CATALOG ═══
@@ -317,8 +378,25 @@ const CATALOG = {
   }
 };
 
-// Track last seen timestamp per device
-const lastSeen = {};
+// ═══ DEVICE STATE ═══
+// Persistent state for all devices — updated incrementally
+const deviceState = {}; // deviceState[deviceId][tagId] = { val, ts }
+
+function updateState(data) {
+  data.forEach(msg => {
+    const dev = msg.deviceId;
+    if (!dev || !msg.metrics || !msg.timestamp) return;
+    if (!deviceState[dev]) deviceState[dev] = {};
+    const t = new Date(msg.timestamp).getTime();
+    Object.entries(msg.metrics).forEach(([k, v]) => {
+      // Only update if newer
+      if (!deviceState[dev][k] || t >= deviceState[dev][k].ts) {
+        deviceState[dev][k] = { val: v, ts: t };
+      }
+    });
+    lastSeen[dev] = Math.max(lastSeen[dev] || 0, t);
+  });
+}
 
 function renderDevices(devices, metrics) {
   // Update lastSeen
@@ -446,6 +524,103 @@ function renderTimeline(data) {
     item.innerHTML = `<div class="tl-time">${new Date(msg.timestamp).toLocaleTimeString()}</div><div class="tl-dot" style="background:${isAlert?'var(--accent3)':color}"></div><div class="tl-content">${k} = ${vd}<div class="tl-device">${msg.deviceId}</div></div>`;
     tl.appendChild(item);
   });
+}
+
+// ═══ CHART HISTORY ═══
+const hx = { temp: [], hum: [], air: [], volt: [] };
+const CUTOFF_24H = () => Date.now() - 24 * 60 * 60 * 1000;
+
+function pushH(arr, val, t) {
+  if (typeof val !== 'number' || isNaN(val)) return;
+  arr.push([t, val]);
+  while (arr.length && arr[0][0] < CUTOFF_24H()) arr.shift();
+}
+
+async function loadWarmHistory() {
+  try {
+    const res = await fetch(`${apiUrl}?tenantId=${encodeURIComponent(tenantId)}&apiKey=${encodeURIComponent(apiKey)}&mode=warm`);
+    if (!res.ok) return;
+    const json = await res.json();
+    (json.data || []).forEach(msg => {
+      if (!msg.metrics || !msg.timestamp) return;
+      const t = new Date(msg.timestamp).getTime();
+      if (t < CUTOFF_24H()) return;
+      const k = Object.keys(msg.metrics)[0];
+      const v = msg.metrics[k];
+      if (typeof v !== 'number') return;
+      if (msg.deviceId === 'WB_MSW_A' || msg.deviceId === 'WB_MSW_B') {
+        if (k === 'Temperature' || k === 'Temperature_fine') pushH(hx.temp, v, t);
+        if (k === 'Humidity' || k === 'Humidity_fine') pushH(hx.hum, v, t);
+      }
+      if (msg.deviceId === 'WB_MSW_A' && (k === 'Air_quality' || k === 'CO2_ppm')) pushH(hx.air, v, t);
+      if (msg.deviceId === 'Eastrone_Quadro' && (k === 'Voltage_L3_L1' || k === 'Voltage_Avg_LL' || k === 'Voltage_L3')) pushH(hx.volt, v, t);
+      // Also update deviceState from warm data
+      if (!deviceState[msg.deviceId]) deviceState[msg.deviceId] = {};
+      const ts = t;
+      if (!deviceState[msg.deviceId][k] || ts >= (deviceState[msg.deviceId][k].ts || 0)) {
+        deviceState[msg.deviceId][k] = { val: v, ts };
+      }
+    });
+    Object.keys(hx).forEach(k => hx[k].sort((a, b) => a[0] - b[0]));
+    renderCharts();
+  } catch(e) {}
+}
+
+function renderCharts() {
+  drawChart('cTemp', hx.temp, '#ff6b35', '°C');
+  drawChart('cHum',  hx.hum,  '#00d4ff', '%');
+  drawChart('cAir',  hx.air,  '#00ff9d', '');
+  drawChart('cVolt', hx.volt, '#f59e0b', 'V');
+}
+
+function drawChart(id, data, color, unit) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  const W = 400, H = 120;
+  const pl = 42, pr = 8, pt = 14, pb = 22;
+  const cW = W - pl - pr, cH = H - pt - pb;
+  const maxT = Date.now(), minT = maxT - 24 * 60 * 60 * 1000;
+  const sorted = data.filter(d => d[0] >= minT && d[0] <= maxT).sort((a, b) => a[0] - b[0]);
+  if (!sorted.length) {
+    el.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:120px;font-size:11px;color:#334155">No data yet</div>';
+    return;
+  }
+  const vals = sorted.map(d => d[1]);
+  const minV = Math.min(...vals), maxV = Math.max(...vals);
+  const vpad = (maxV - minV) * 0.15 || 1;
+  const lo = minV - vpad, hi = maxV + vpad;
+  const px = t => pl + ((t - minT) / (maxT - minT)) * cW;
+  const py = v => pt + cH - ((v - lo) / (hi - lo)) * cH;
+  let pathD = '';
+  sorted.forEach((d, i) => {
+    const x = px(d[0]).toFixed(1), y = py(d[1]).toFixed(1);
+    if (i === 0) { pathD += `M${x},${y}`; return; }
+    if (d[0] - sorted[i-1][0] > 10 * 60 * 1000) pathD += ` M${x},${y}`;
+    else pathD += ` L${x},${y}`;
+  });
+  const yT = [minV, (minV+maxV)/2, maxV];
+  const yL = yT.map(v => `<text x="${pl-4}" y="${(py(v)+3.5).toFixed(1)}" text-anchor="end" fill="#64748b" font-size="9" font-family="Courier New,monospace" direction="ltr">${Math.round(v*10)/10}</text>`).join('');
+  const step = 60 * 60 * 1000;
+  const xTicks = [];
+  for (let t = minT; t <= maxT; t += step) xTicks.push(t);
+  const xL = xTicks.filter((_,i) => i % 2 === 0).map(t => {
+    const d = new Date(t);
+    const lb = d.getHours().toString().padStart(2,'0') + ':' + d.getMinutes().toString().padStart(2,'0');
+    return `<text x="${px(t).toFixed(1)}" y="${H-3}" text-anchor="middle" fill="#64748b" font-size="9" font-family="Courier New,monospace" direction="ltr">${lb}</text>`;
+  }).join('');
+  const gridH = yT.map(v => `<line x1="${pl}" y1="${py(v).toFixed(1)}" x2="${pl+cW}" y2="${py(v).toFixed(1)}" stroke="#1e2d45" stroke-width="1"/>`).join('');
+  const gridV = xTicks.map(t => `<line x1="${px(t).toFixed(1)}" y1="${pt}" x2="${px(t).toFixed(1)}" y2="${pt+cH}" stroke="#1e2d45" stroke-width="1" stroke-dasharray="2,3"/>`).join('');
+  const latest = vals[vals.length-1];
+  el.innerHTML = `<div style="position:relative;height:${H}px;direction:ltr">
+    <div style="position:absolute;top:2px;right:4px;font-size:12px;font-weight:600;color:${color};font-family:'IBM Plex Mono',monospace;direction:ltr">${Math.round(latest*100)/100}${unit?' '+unit:''}</div>
+    <svg xmlns="http://www.w3.org/2000/svg" width="100%" height="${H}" viewBox="0 0 ${W} ${H}" style="direction:ltr">
+      ${gridH}${gridV}
+      <path d="${pathD}" fill="none" stroke="${color}" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+      <line x1="${pl}" y1="${pt}" x2="${pl}" y2="${pt+cH}" stroke="#2d3d55" stroke-width="1"/>
+      <line x1="${pl}" y1="${pt+cH}" x2="${pl+cW}" y2="${pt+cH}" stroke="#2d3d55" stroke-width="1"/>
+      ${yL}${xL}
+    </svg>
+  </div>`;
 }
 
 document.addEventListener('keydown', e => {
