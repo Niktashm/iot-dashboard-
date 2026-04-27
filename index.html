@@ -540,12 +540,25 @@ async function loadWarmHistory() {
     const res = await fetch(`${apiUrl}?tenantId=${encodeURIComponent(tenantId)}&apiKey=${encodeURIComponent(apiKey)}&mode=warm`);
     if (!res.ok) return;
     const json = await res.json();
-    (json.data || []).forEach(msg => {
+    const data = json.data || [];
+
+    data.forEach(msg => {
       if (!msg.metrics || !msg.timestamp) return;
       const t = new Date(msg.timestamp).getTime();
       if (t < CUTOFF_24H()) return;
       const k = Object.keys(msg.metrics)[0];
       const v = msg.metrics[k];
+
+      // Update deviceState for ALL metrics (not just numbers)
+      if (msg.deviceId) {
+        if (!deviceState[msg.deviceId]) deviceState[msg.deviceId] = {};
+        if (!deviceState[msg.deviceId][k] || t >= (deviceState[msg.deviceId][k].ts || 0)) {
+          deviceState[msg.deviceId][k] = { val: v, ts: t };
+        }
+        lastSeen[msg.deviceId] = Math.max(lastSeen[msg.deviceId] || 0, t);
+      }
+
+      // Push numeric values to chart history
       if (typeof v !== 'number') return;
       if (msg.deviceId === 'WB_MSW_A' || msg.deviceId === 'WB_MSW_B') {
         if (k === 'Temperature' || k === 'Temperature_fine') pushH(hx.temp, v, t);
@@ -553,15 +566,22 @@ async function loadWarmHistory() {
       }
       if (msg.deviceId === 'WB_MSW_A' && (k === 'Air_quality' || k === 'CO2_ppm')) pushH(hx.air, v, t);
       if (msg.deviceId === 'Eastrone_Quadro' && (k === 'Voltage_L3_L1' || k === 'Voltage_Avg_LL' || k === 'Voltage_L3')) pushH(hx.volt, v, t);
-      // Also update deviceState from warm data
-      if (!deviceState[msg.deviceId]) deviceState[msg.deviceId] = {};
-      const ts = t;
-      if (!deviceState[msg.deviceId][k] || ts >= (deviceState[msg.deviceId][k].ts || 0)) {
-        deviceState[msg.deviceId][k] = { val: v, ts };
-      }
     });
+
     Object.keys(hx).forEach(k => hx[k].sort((a, b) => a[0] - b[0]));
+
+    // Rebuild metrics from state and re-render everything
+    const devices = {}, metrics = {};
+    Object.entries(deviceState).forEach(([dev, tags]) => {
+      devices[dev] = Object.keys(tags).length;
+      metrics[dev] = {};
+      Object.entries(tags).forEach(([k, {val}]) => { metrics[dev][k] = val; });
+    });
+
+    renderDevices(devices, metrics);
     renderCharts();
+    if (selectedDevice) renderCatalogMetrics(selectedDevice, metrics[selectedDevice] || {});
+
   } catch(e) {}
 }
 
