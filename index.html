@@ -116,6 +116,14 @@
 
   .no-data { text-align: center; padding: 40px 20px; color: var(--text-dim); font-size: 13px; }
 
+  /* DEVICE PANELS */
+  .bar-chart { padding: 16px 20px; }
+  .bar-row { display: flex; align-items: center; gap: 12px; margin-bottom: 10px; }
+  .bar-label { font-size: 11px; color: var(--text-dim); width: 130px; text-align: right; flex-shrink: 0; }
+  .bar-track { flex: 1; height: 5px; background: var(--surface2); border-radius: 3px; overflow: hidden; }
+  .bar-fill { height: 100%; border-radius: 3px; transition: width 0.8s cubic-bezier(0.4,0,0.2,1); }
+  .bar-val { font-size: 11px; color: var(--text); width: 70px; flex-shrink: 0; }
+
   @media (max-width: 768px) {
     .stats-row { grid-template-columns: repeat(2, 1fr); }
     .main-grid { grid-template-columns: 1fr; }
@@ -200,6 +208,47 @@
         <div class="card-header"><span class="card-title">Live Events</span><span class="card-badge">REAL-TIME</span></div>
         <div class="timeline" id="timeline"><div class="no-data">Waiting for data...</div></div>
       </div>
+    </div>
+
+    <!-- DEVICE PANELS -->
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-top:18px">
+
+      <!-- WB_MSW Environmental -->
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">WB_MSW — Environmental Sensors</span>
+          <span class="card-badge">SENSOR</span>
+        </div>
+        <div class="bar-chart" id="wbBars"><div class="no-data">Waiting...</div></div>
+      </div>
+
+      <!-- Eastrone Power -->
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">Eastrone — Power Parameters</span>
+          <span class="card-badge" style="color:var(--accent5);border-color:rgba(245,158,11,0.2);background:rgba(245,158,11,0.05)">POWER</span>
+        </div>
+        <div class="metrics-list" id="eastronPanel"><div class="no-data">Waiting...</div></div>
+      </div>
+
+      <!-- SENECA I/O -->
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">SENECA — I/O Status</span>
+          <span class="card-badge" style="color:var(--accent4);border-color:rgba(168,85,247,0.2);background:rgba(168,85,247,0.05)">I/O</span>
+        </div>
+        <div class="metrics-list" id="senecaPanel"><div class="no-data">Waiting...</div></div>
+      </div>
+
+      <!-- Dat3130 Relay -->
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">Dat3130 — Relay & Input</span>
+          <span class="card-badge" style="color:var(--accent3);border-color:rgba(255,107,53,0.2);background:rgba(255,107,53,0.05)">RELAY</span>
+        </div>
+        <div class="metrics-list" id="datPanel"><div class="no-data">Waiting...</div></div>
+      </div>
+
     </div>
 
     <!-- CHARTS -->
@@ -336,6 +385,7 @@ function processData(data, json) {
   renderDevices(devices, metrics);
   renderAlerts(alerts);
   renderTimeline(data);
+  renderDevicePanels(metrics);
   if (selectedDevice) renderCatalogMetrics(selectedDevice, metrics[selectedDevice] || {});
 
   // Push to chart history and alert history
@@ -560,6 +610,89 @@ function renderTimeline(data) {
   });
 }
 
+// ═══ DEVICE PANELS ═══
+function renderDevicePanels(metrics) {
+  renderWBPanel(metrics['WB_MSW_A'] || {}, metrics['WB_MSW_B'] || {});
+  renderMetricsPanel('eastronPanel', metrics['Eastrone_Quadro'] || {}, [
+    'Voltage_L3','Voltage_L3_L1','Voltage_Avg_LL','Voltage_L2_L3',
+    'Current_L3','Current_Avg','Current_Sum',
+    'Power_Active_Total','Power_Reactive_Total','Power_Apparent_Total',
+    'PowerFactor_Total','PowerFactor_L3',
+    'Frequency','THD_Voltage_L3','THD_Voltage_Avg_LN'
+  ]);
+  renderMetricsPanel('senecaPanel', metrics['SENECA_test_Quadro'] || {}, [
+    'Input_1','Input_2','Input_3','Input_4','Input_5','Input_6','Input_7','Input_8',
+    'Input_9','Input_10','Input_11','Input_12','Input_13','Input_14','Input_15','Input_16',
+    'Output_1','Output_2','Output_3','Output_4','Output_5','Output_6','Output_7','Output_8',
+    'Inputs_1_16_Bitmap','Outputs_1_8_Bitmap'
+  ]);
+  renderMetricsPanel('datPanel', metrics['Dat3130_QuadroC'] || {}, [
+    'Relay_0','Relay_1','Relay_2','Relay_3',
+    'Input_0','Input_1','Input_2','Input_3',
+    'Watchdog_Event','PowerUp_Event','Watchdog_Enable',
+    'Latch_High_0','Latch_High_1','Latch_High_2','Latch_High_3',
+    'Inputs_Bitmap','Outputs_Bitmap','Coils_Mirror'
+  ]);
+}
+
+function renderWBPanel(wa, wb) {
+  const el = document.getElementById('wbBars');
+  if (!el) return;
+  const bars = [
+    ['Temperature A', wa.Temperature ?? wa.Temperature_fine, 50, 'var(--accent3)', '°C'],
+    ['Temperature B', wb.Temperature ?? wb.Temperature_fine, 50, 'var(--accent3)', '°C'],
+    ['Humidity A', wa.Humidity ?? wa.Humidity_fine, 100, 'var(--accent)', '%'],
+    ['Humidity B', wb.Humidity ?? wb.Humidity_fine, 100, 'var(--accent)', '%'],
+    ['CO2 A', wa.CO2_ppm, 2000, 'var(--accent2)', 'ppm'],
+    ['VOC A', wa.VOC_eCO2, 2000, 'var(--accent4)', ''],
+    ['VOC B', wb.VOC_eCO2, 2000, 'var(--accent4)', ''],
+    ['Air Quality A', wa.Air_quality, 1000, 'var(--accent5)', ''],
+    ['Illuminance A', wa.Illuminance_raw ?? wa.Illuminance, 1000, 'var(--accent5)', 'lx'],
+    ['Illuminance B', wb.Illuminance_raw ?? wb.Illuminance, 1000, 'var(--accent5)', 'lx'],
+    ['Noise A', wa.Noise_level, 100, '#64748b', 'dB'],
+    ['Noise B', wb.Noise_level, 100, '#64748b', 'dB'],
+  ];
+  el.innerHTML = '';
+  let hasData = false;
+  bars.forEach(([label, val, max, color, unit]) => {
+    if (val === undefined || val === null) return;
+    hasData = true;
+    const pct = Math.min(100, Math.round((val / max) * 100));
+    const row = document.createElement('div'); row.className = 'bar-row';
+    row.innerHTML = `
+      <div class="bar-label">${label}</div>
+      <div class="bar-track"><div class="bar-fill" style="width:${pct}%;background:${color}"></div></div>
+      <div class="bar-val">${Math.round(val*100)/100}${unit}</div>
+    `;
+    el.appendChild(row);
+  });
+  if (!hasData) el.innerHTML = '<div class="no-data">Waiting for data...</div>';
+}
+
+function renderMetricsPanel(elemId, metricsObj, keys) {
+  const el = document.getElementById(elemId);
+  if (!el) return;
+  el.innerHTML = '';
+  let hasData = false;
+  keys.forEach(k => {
+    const v = metricsObj[k];
+    if (v === undefined) return;
+    hasData = true;
+    const isAlert = ALERT_KEYS.includes(k) && v === true;
+    let cls = 'num', display = v;
+    if (typeof v === 'boolean') {
+      cls = v ? (isAlert ? 'alert' : 'bool-true') : 'bool-false';
+      display = v ? (isAlert ? 'TRUE ⚠️' : 'TRUE ✓') : 'FALSE';
+    } else if (typeof v === 'number') {
+      display = Math.round(v * 1000) / 1000;
+    }
+    const row = document.createElement('div'); row.className = 'metric-row';
+    row.innerHTML = `<span class="metric-name">${k}</span><span class="metric-val ${cls}">${display}</span>`;
+    el.appendChild(row);
+  });
+  if (!hasData) el.innerHTML = '<div class="no-data">Waiting for data...</div>';
+}
+
 // ═══ CHART HISTORY ═══
 const hx = { temp: [], hum: [], air: [], volt: [] };
 const alertHistory = []; // { device, key, time }
@@ -622,6 +755,7 @@ async function loadWarmHistory() {
     });
 
     renderDevices(devices, metrics);
+    renderDevicePanels(metrics);
     renderCharts();
     renderAlerts([]);
     if (selectedDevice) renderCatalogMetrics(selectedDevice, metrics[selectedDevice] || {});
