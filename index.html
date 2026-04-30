@@ -46,6 +46,27 @@
   .login-error { background: rgba(255,107,53,0.1); border: 1px solid rgba(255,107,53,0.3); border-radius: 8px; padding: 12px 16px; font-size: 13px; color: var(--accent3); margin-top: 16px; display: none; }
   .login-error.show { display: block; }
 
+  /* TENANT SELECTOR */
+  .tenant-page { position: fixed; inset: 0; z-index: 90; display: none; align-items: center; justify-content: center; background: var(--bg); }
+  .tenant-page.show { display: flex; }
+  .tenant-box { width: 600px; }
+  .tenant-header { text-align: center; margin-bottom: 32px; }
+  .tenant-header h2 { font-size: 16px; color: var(--accent); letter-spacing: 3px; text-transform: uppercase; margin-bottom: 6px; }
+  .tenant-header p { font-size: 12px; color: var(--text-dim); }
+  .tenant-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+  .tenant-card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 20px 16px; cursor: pointer; transition: all 0.2s; position: relative; overflow: hidden; text-align: center; }
+  .tenant-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px; background: var(--accent); }
+  .tenant-card:hover { border-color: var(--accent); transform: translateY(-3px); box-shadow: 0 8px 24px rgba(0,212,255,0.1); }
+  .tenant-card-icon { font-size: 24px; margin-bottom: 10px; }
+  .tenant-card-name { font-size: 13px; font-weight: 600; color: var(--text); margin-bottom: 4px; }
+  .tenant-card-id { font-size: 10px; color: var(--text-dim); margin-bottom: 8px; }
+  .tenant-card-status { font-size: 10px; padding: 2px 8px; border-radius: 100px; display: inline-block; }
+  .tenant-card-status.active { background: rgba(0,255,157,0.1); color: var(--accent2); border: 1px solid rgba(0,255,157,0.2); }
+  .tenant-card-status.test { background: rgba(245,158,11,0.1); color: var(--accent5); border: 1px solid rgba(245,158,11,0.2); }
+  .tenant-back { margin-top: 20px; text-align: center; }
+  .tenant-back button { background: transparent; border: 1px solid var(--border); color: var(--text-dim); padding: 8px 20px; border-radius: 8px; font-family: 'IBM Plex Mono', monospace; font-size: 12px; cursor: pointer; }
+  .tenant-back button:hover { border-color: var(--accent3); color: var(--accent3); }
+
   /* DASHBOARD */
   .dashboard { display: none; }
   .dashboard.show { display: block; }
@@ -116,14 +137,6 @@
 
   .no-data { text-align: center; padding: 40px 20px; color: var(--text-dim); font-size: 13px; }
 
-  /* DEVICE PANELS */
-  .bar-chart { padding: 16px 20px; }
-  .bar-row { display: flex; align-items: center; gap: 12px; margin-bottom: 10px; }
-  .bar-label { font-size: 11px; color: var(--text-dim); width: 130px; text-align: right; flex-shrink: 0; }
-  .bar-track { flex: 1; height: 5px; background: var(--surface2); border-radius: 3px; overflow: hidden; }
-  .bar-fill { height: 100%; border-radius: 3px; transition: width 0.8s cubic-bezier(0.4,0,0.2,1); }
-  .bar-val { font-size: 11px; color: var(--text); width: 70px; flex-shrink: 0; }
-
   @media (max-width: 768px) {
     .stats-row { grid-template-columns: repeat(2, 1fr); }
     .main-grid { grid-template-columns: 1fr; }
@@ -139,26 +152,37 @@
   <div class="login-box">
     <div class="login-logo">
       <h1>Edge Forwarder</h1>
-      <p>IoT Live Dashboard — Secure Access</p>
+      <p>IoT Admin Dashboard</p>
     </div>
     <div class="login-field">
       <label class="login-label">Function URL</label>
       <input class="login-input" id="loginUrl" type="text" placeholder="https://func-xxx.azurewebsites.net/api/GetLatestData" />
     </div>
     <div class="login-field">
-      <label class="login-label">Tenant ID</label>
-      <input class="login-input" id="loginTenant" type="text" placeholder="tenant-test" />
+      <label class="login-label">Admin Key</label>
+      <input class="login-input" id="loginKey" type="password" placeholder="Admin password" />
     </div>
-    <div class="login-field">
-      <label class="login-label">API Key</label>
-      <input class="login-input" id="loginKey" type="password" placeholder="Your API key" />
-    </div>
-    <button class="login-btn" onclick="doLogin()">▶ Connect</button>
-    <div class="login-error" id="loginError">Invalid credentials. Please try again.</div>
+    <button class="login-btn" onclick="doLogin()">▶ Enter</button>
+    <div class="login-error" id="loginError">Invalid admin key.</div>
   </div>
 </div>
 
-<!-- DASHBOARD -->
+<!-- TENANT SELECTOR -->
+<div class="tenant-page" id="tenantPage">
+  <div class="tenant-box">
+    <div class="tenant-header">
+      <h2>Select Tenant</h2>
+      <p>Choose which tenant's data to monitor</p>
+    </div>
+    <div class="tenant-grid" id="tenantGrid">
+      <!-- populated by JS -->
+    </div>
+    <div class="tenant-back">
+      <button onclick="backToLogin()">⏏ Logout</button>
+    </div>
+  </div>
+</div>
+
 <div class="dashboard" id="dashboard">
   <div class="container">
 
@@ -169,11 +193,12 @@
       </div>
       <div class="header-right">
         <span class="last-update" id="lastUpdate">—</span>
+        <span style="font-size:11px;padding:4px 12px;border-radius:100px;background:rgba(168,85,247,0.1);color:var(--accent4);border:1px solid rgba(168,85,247,0.3)" id="tenantBadge">—</span>
         <div class="status-pill loading" id="statusPill">
           <span class="pulse"></span>
           <span id="statusText">Connecting</span>
         </div>
-        <button class="logout-btn" onclick="doLogout()">⏏ Logout</button>
+        <button class="logout-btn" onclick="switchTenant()">⇄ Switch Tenant</button>
       </div>
     </header>
 
@@ -193,12 +218,6 @@
       <div class="card">
         <div class="card-header"><span class="card-title">Alerts</span><span class="card-badge" id="alertBadge" style="color:var(--accent3);border-color:rgba(255,107,53,0.3);background:rgba(255,107,53,0.1)">—</span></div>
         <div class="alert-list" id="alertList"><div class="no-data">Waiting for data...</div></div>
-        <div style="border-top:1px solid var(--border);padding:10px 14px 4px">
-          <div style="font-size:11px;color:var(--text-dim);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px">Alert History — 24h</div>
-          <div id="alertHistory" style="max-height:160px;overflow-y:auto">
-            <div class="no-data" style="padding:12px 0">No alerts in last 24h</div>
-          </div>
-        </div>
       </div>
       <div class="card">
         <div class="card-header"><span class="card-title" id="metricsTitle">Select a device above</span><span class="card-badge">METRICS</span></div>
@@ -207,72 +226,6 @@
       <div class="card">
         <div class="card-header"><span class="card-title">Live Events</span><span class="card-badge">REAL-TIME</span></div>
         <div class="timeline" id="timeline"><div class="no-data">Waiting for data...</div></div>
-      </div>
-    </div>
-
-    <!-- DEVICE PANELS -->
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-top:18px">
-
-      <!-- WB_MSW Environmental -->
-      <div class="card">
-        <div class="card-header">
-          <span class="card-title">WB_MSW — Environmental Sensors</span>
-          <span class="card-badge">SENSOR</span>
-        </div>
-        <div class="bar-chart" id="wbBars"><div class="no-data">Waiting...</div></div>
-      </div>
-
-      <!-- Eastrone Power -->
-      <div class="card">
-        <div class="card-header">
-          <span class="card-title">Eastrone — Power Parameters</span>
-          <span class="card-badge" style="color:var(--accent5);border-color:rgba(245,158,11,0.2);background:rgba(245,158,11,0.05)">POWER</span>
-        </div>
-        <div class="metrics-list" id="eastronPanel"><div class="no-data">Waiting...</div></div>
-      </div>
-
-      <!-- SENECA I/O -->
-      <div class="card">
-        <div class="card-header">
-          <span class="card-title">SENECA — I/O Status</span>
-          <span class="card-badge" style="color:var(--accent4);border-color:rgba(168,85,247,0.2);background:rgba(168,85,247,0.05)">I/O</span>
-        </div>
-        <div class="metrics-list" id="senecaPanel"><div class="no-data">Waiting...</div></div>
-      </div>
-
-      <!-- Dat3130 Relay -->
-      <div class="card">
-        <div class="card-header">
-          <span class="card-title">Dat3130 — Relay & Input</span>
-          <span class="card-badge" style="color:var(--accent3);border-color:rgba(255,107,53,0.2);background:rgba(255,107,53,0.05)">RELAY</span>
-        </div>
-        <div class="metrics-list" id="datPanel"><div class="no-data">Waiting...</div></div>
-      </div>
-
-    </div>
-
-    <!-- CHARTS -->
-    <div style="display:flex;align-items:center;gap:16px;margin:32px 0 20px">
-      <div style="flex:1;height:1px;background:#1e2d45"></div>
-      <div style="font-size:11px;color:#a855f7;text-transform:uppercase;letter-spacing:2px;padding:5px 14px;border:1px solid rgba(168,85,247,0.3);border-radius:100px;background:rgba(168,85,247,0.05)">📊 Last 24 Hours</div>
-      <div style="flex:1;height:1px;background:#1e2d45"></div>
-    </div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-bottom:32px">
-      <div style="background:#111827;border:1px solid #1e2d45;border-radius:10px;overflow:hidden">
-        <div style="padding:10px 16px;border-bottom:1px solid #1e2d45;font-size:11px;color:#ff6b35;text-transform:uppercase;letter-spacing:1px">Temperature — WB_MSW A/B</div>
-        <div id="cTemp" style="padding:8px 16px 4px;height:140px"></div>
-      </div>
-      <div style="background:#111827;border:1px solid #1e2d45;border-radius:10px;overflow:hidden">
-        <div style="padding:10px 16px;border-bottom:1px solid #1e2d45;font-size:11px;color:#00d4ff;text-transform:uppercase;letter-spacing:1px">Humidity — WB_MSW A/B</div>
-        <div id="cHum" style="padding:8px 16px 4px;height:140px"></div>
-      </div>
-      <div style="background:#111827;border:1px solid #1e2d45;border-radius:10px;overflow:hidden">
-        <div style="padding:10px 16px;border-bottom:1px solid #1e2d45;font-size:11px;color:#00ff9d;text-transform:uppercase;letter-spacing:1px">CO2 / Air Quality — WB_MSW_A</div>
-        <div id="cAir" style="padding:8px 16px 4px;height:140px"></div>
-      </div>
-      <div style="background:#111827;border:1px solid #1e2d45;border-radius:10px;overflow:hidden">
-        <div style="padding:10px 16px;border-bottom:1px solid #1e2d45;font-size:11px;color:#f59e0b;text-transform:uppercase;letter-spacing:1px">Voltage — Eastrone</div>
-        <div id="cVolt" style="padding:8px 16px 4px;height:140px"></div>
       </div>
     </div>
 
@@ -285,6 +238,16 @@ let totalMessages = 0;
 let selectedDevice = null;
 let apiUrl = '', tenantId = '', apiKey = '';
 
+// All known tenants — loaded after admin login
+const TENANTS = [
+  { id: 'tenant-test', key: 'abc123', name: 'Tenant Test', icon: '🧪', status: 'test' },
+  { id: 'tenant1',     key: 'abc123', name: 'Tenant 1',    icon: '🏢', status: 'active' },
+  { id: 'tenant2',     key: 'abc456', name: 'Tenant 2',    icon: '🏢', status: 'active' },
+];
+
+const ADMIN_KEY = 'admin2024'; // simple admin password
+const DEFAULT_URL = 'https://func-edgeforwarder-ekc5etdghvaje8b8.westeurope-01.azurewebsites.net/api/GetLatestData';
+
 const ALERT_KEYS = ['DALI_Bus_Error', 'Watchdog_Event', 'PowerUp_Event'];
 const DEVICE_COLORS = {
   'WB_MSW_A': '#00d4ff', 'WB_MSW_B': '#00bdff',
@@ -292,21 +255,15 @@ const DEVICE_COLORS = {
   'Resi_dali_SIO_QuadroG': '#00ff9d', 'Dat3130_QuadroC': '#ff6b35'
 };
 
+// ═══ LOGIN (Admin) ═══
 async function doLogin() {
-  const url = document.getElementById('loginUrl').value.trim();
-  const tenant = document.getElementById('loginTenant').value.trim();
+  const url = document.getElementById('loginUrl').value.trim() || DEFAULT_URL;
   const key = document.getElementById('loginKey').value.trim();
-  if (!url || !tenant || !key) { showLoginError('Please fill in all fields.'); return; }
-  try {
-    const res = await fetch(`${url}?tenantId=${encodeURIComponent(tenant)}&apiKey=${encodeURIComponent(key)}`);
-    if (res.status === 401 || res.status === 403) { showLoginError('Invalid Tenant ID or API Key.'); return; }
-    if (!res.ok) { showLoginError(`Connection failed: HTTP ${res.status}`); return; }
-    apiUrl = url; tenantId = tenant; apiKey = key;
-    document.getElementById('loginPage').style.display = 'none';
-    document.getElementById('dashboard').classList.add('show');
-    startFetching();
-    loadWarmHistory();
-  } catch { showLoginError('Cannot connect. Check the URL and try again.'); }
+  if (!key) { showLoginError('Please enter the admin key.'); return; }
+  if (key !== ADMIN_KEY) { showLoginError('Invalid admin key.'); return; }
+  apiUrl = url;
+  document.getElementById('loginPage').style.display = 'none';
+  showTenantSelector();
 }
 
 function showLoginError(msg) {
@@ -314,14 +271,54 @@ function showLoginError(msg) {
   el.textContent = msg; el.classList.add('show');
 }
 
-function doLogout() {
-  clearInterval(interval); interval = null;
-  totalMessages = 0; selectedDevice = null;
-  Object.keys(deviceState).forEach(k => delete deviceState[k]);
-  Object.keys(lastSeen).forEach(k => delete lastSeen[k]);
+function backToLogin() {
+  stopFetching();
+  document.getElementById('tenantPage').classList.remove('show');
   document.getElementById('dashboard').classList.remove('show');
   document.getElementById('loginPage').style.display = 'flex';
   document.getElementById('loginError').classList.remove('show');
+}
+
+// ═══ TENANT SELECTOR ═══
+function showTenantSelector() {
+  stopFetching();
+  document.getElementById('dashboard').classList.remove('show');
+  document.getElementById('tenantPage').classList.add('show');
+
+  const grid = document.getElementById('tenantGrid');
+  grid.innerHTML = '';
+  TENANTS.forEach(t => {
+    const card = document.createElement('div');
+    card.className = 'tenant-card';
+    card.innerHTML = `
+      <div class="tenant-card-icon">${t.icon}</div>
+      <div class="tenant-card-name">${t.name}</div>
+      <div class="tenant-card-id">${t.id}</div>
+      <span class="tenant-card-status ${t.status}">${t.status.toUpperCase()}</span>
+    `;
+    card.onclick = () => openTenant(t);
+    grid.appendChild(card);
+  });
+}
+
+function openTenant(t) {
+  tenantId = t.id;
+  apiKey = t.key;
+  totalMessages = 0;
+  selectedDevice = null;
+  document.getElementById('tenantPage').classList.remove('show');
+  document.getElementById('dashboard').classList.add('show');
+  document.getElementById('tenantBadge').textContent = `${t.icon} ${t.name}`;
+  startFetching();
+}
+
+function switchTenant() {
+  stopFetching();
+  showTenantSelector();
+}
+
+function stopFetching() {
+  if (interval) { clearInterval(interval); interval = null; }
 }
 
 function startFetching() {
@@ -342,6 +339,7 @@ async function fetchData() {
     if (res.status === 401 || res.status === 403) { setStatus('error', 'Auth Error'); return; }
     const json = await res.json();
     const data = json.data || [];
+    totalMessages += data.length;
     processData(data, json);
     setStatus('live', 'LIVE');
     document.getElementById('lastUpdate').textContent = 'Updated: ' + new Date().toLocaleTimeString();
@@ -352,197 +350,35 @@ function processData(data, json) {
   if (!data.length) return;
   document.getElementById('gatewayInfo').textContent =
     `${json.gateway || data[0]?.gatewayId || 'unknown'} / ${tenantId} / ${json.protocol || data[0]?.protocol || 'unknown'}`;
-
-  // Update persistent state
-  updateState(data);
-
-  // Build devices and alerts from current state
-  const devices = {}, alerts = [];
-  Object.entries(deviceState).forEach(([dev, tags]) => {
-    devices[dev] = Object.keys(tags).length;
-    Object.entries(tags).forEach(([k, {val}]) => {
-      if (ALERT_KEYS.includes(k) && val === true) {
-        alerts.push({ device: dev, key: k, time: new Date(deviceState[dev][k].ts).toISOString() });
-      }
-    });
+  const devices = {}, metrics = {}, alerts = [];
+  data.forEach(msg => {
+    const dev = msg.deviceId;
+    if (!devices[dev]) devices[dev] = 0; devices[dev]++;
+    if (!metrics[dev]) metrics[dev] = {};
+    const k = Object.keys(msg.metrics)[0], v = msg.metrics[k];
+    metrics[dev][k] = v;
+    if (ALERT_KEYS.includes(k) && v === true) alerts.push({ device: dev, key: k, time: msg.timestamp });
   });
-
-  // Build flat metrics from state (latest value per tag)
-  const metrics = {};
-  Object.entries(deviceState).forEach(([dev, tags]) => {
-    metrics[dev] = {};
-    Object.entries(tags).forEach(([k, {val}]) => { metrics[dev][k] = val; });
-  });
-
-  totalMessages += data.length;
-  document.getElementById('statDevices').textContent = Object.keys(deviceState).length;
+  document.getElementById('statDevices').textContent = Object.keys(devices).length;
   document.getElementById('statMessages').textContent = totalMessages;
   document.getElementById('statAlerts').textContent = alerts.length;
   document.getElementById('statMetrics').textContent = Object.values(metrics).reduce((s, m) => s + Object.keys(m).length, 0);
   document.getElementById('statQuality').textContent = 'GOOD';
-  document.getElementById('deviceBadge').textContent = `${Object.keys(deviceState).length} ONLINE`;
-
-  renderDevices(devices, metrics);
-  renderAlerts(alerts);
-  renderTimeline(data);
-  renderDevicePanels(metrics);
-  if (selectedDevice) renderCatalogMetrics(selectedDevice, metrics[selectedDevice] || {});
-
-  // Push to chart history and alert history
-  data.forEach(msg => {
-    if (!msg.metrics || !msg.timestamp) return;
-    const t = new Date(msg.timestamp).getTime();
-    const k = Object.keys(msg.metrics)[0];
-    const v = msg.metrics[k];
-    if (typeof v === 'boolean' && v === true && ALERT_KEYS.includes(k)) {
-      const exists = alertHistory.some(a => a.device === msg.deviceId && a.key === k && Math.abs(a.time - t) < 60000);
-      if (!exists) alertHistory.push({ device: msg.deviceId, key: k, time: t });
-      while (alertHistory.length && alertHistory[0].time < CUTOFF_24H()) alertHistory.shift();
-    }
-    if (typeof v !== 'number') return;
-    if (msg.deviceId === 'WB_MSW_A' || msg.deviceId === 'WB_MSW_B') {
-      if (k === 'Temperature' || k === 'Temperature_fine') pushH(hx.temp, v, t);
-      if (k === 'Humidity' || k === 'Humidity_fine') pushH(hx.hum, v, t);
-    }
-    if (msg.deviceId === 'WB_MSW_A' && (k === 'Air_quality' || k === 'CO2_ppm')) pushH(hx.air, v, t);
-    if (msg.deviceId === 'Eastrone_Quadro' && (k === 'Voltage_L3_L1' || k === 'Voltage_Avg_LL' || k === 'Voltage_L3')) pushH(hx.volt, v, t);
-  });
-  renderCharts();
-}
-
-// ═══ DEVICE CATALOG ═══
-const CATALOG = {
-  'WB_MSW_A': {
-    label: 'WB-MSW v.4 (A)', brand: 'Wirenboard', desc: 'Environmental Sensor',
-    tags: ['Temperature','Humidity','Noise_level','Temperature_fine','Humidity_fine','CO2_ppm','Illuminance','Air_quality','Noise_raw','Motion_raw','Motion_avg','Illuminance_raw','VOC_raw','VOC_eCO2','Temperature_sensor_present','Humidity_sensor_present','CO2_sensor_present','Motion_sensor_present','Noise_sensor_present','IR_sensor_present','buzzer_state','Heating_on','CO2_sensor_enable','LED_red','LED_green','noise_avg_time','temperature_self_heating','illuminance_calibration','LED_blink_period','LED_blink_duration']
-  },
-  'WB_MSW_B': {
-    label: 'WB-MSW v.4 (B)', brand: 'Wirenboard', desc: 'Environmental Sensor',
-    tags: ['Temperature','Humidity','Noise_level','Temperature_fine','Humidity_fine','CO2_ppm','Illuminance','Air_quality','Noise_raw','Motion_raw','Motion_avg','Illuminance_raw','VOC_raw','VOC_eCO2','Temperature_sensor_present','Humidity_sensor_present','CO2_sensor_present','Motion_sensor_present','Noise_sensor_present','IR_sensor_present','buzzer_state','Heating_on','CO2_sensor_enable','LED_red','LED_green','noise_avg_time','temperature_self_heating','illuminance_calibration','LED_blink_period','LED_blink_duration']
-  },
-  'Eastrone_Quadro': {
-    label: 'Eastron SDM630', brand: 'Eastron', desc: '3-Phase Energy Meter',
-    tags: ['Voltage_L1','Voltage_L2','Voltage_L3','Voltage_Avg_LN','Voltage_L1_L2','Voltage_L2_L3','Voltage_L3_L1','Voltage_Avg_LL','Current_L1','Current_L2','Current_L3','Current_Avg','Current_Sum','Current_Neutral','Power_Active_L1','Power_Active_L2','Power_Active_L3','Power_Apparent_Total','Power_Reactive_Total','Power_Active_Total','PowerFactor_L1','PowerFactor_L2','PowerFactor_L3','PowerFactor_Total','PhaseAngle_L1','PhaseAngle_L2','PhaseAngle_L3','PhaseAngle_Total','Frequency','THD_Voltage_L1','THD_Voltage_L2','THD_Voltage_L3','THD_Current_L1','THD_Current_L2','THD_Current_L3','THD_Voltage_Avg_LN','THD_Current_Avg','Demand_Current_L1','Demand_Current_L2','Demand_Current_L3','Demand_Power_Max','Demand_VA_Total','Demand_Neutral_Current','Demand_Current_Max_L2','Demand_Current_Max_L3']
-  },
-  'SENECA_test_Quadro': {
-    label: 'Seneca ZC-16DI-8DO', brand: 'Seneca', desc: '16 DI / 8 DO Module',
-    tags: ['Inputs_1_16_Bitmap','Outputs_1_8_Bitmap','Output_1','Output_2','Output_3','Output_4','Output_5','Output_6','Output_7','Output_8','Input_1','Input_2','Input_3','Input_4','Input_5','Input_6','Input_7','Input_8','Input_9','Input_10','Input_11','Input_12','Input_13','Input_14','Input_15','Input_16','WD_Enable','WD_Timeout_Value']
-  },
-  'Resi_dali_SIO_QuadroG': {
-    label: 'Resi DALI SIO', brand: 'Resi', desc: 'DALI Lighting Controller',
-    tags: ['DALI_Bus_Error','DALI_Lamp_Level','DALI_Group_Level','DALI_All_Lamps_Level','DT8_Status','DT8_Reg_1_ArcLevel','DT8_Reg_2_Color1','DT8_Reg_3_Color2','DT8_Reg_4_Color3','DT8_Reg_5_Color4','DT8_Reg_6_Color5','DT8_Reg_7_Color6','DT8_CMD_Get_Arc_RGBW','DALI_8bit_Frame','Dip_Switch_Status','Modbus_Baudrate','Modbus_Parity','Modbus_StopBits']
-  },
-  'Dat3130_QuadroC': {
-    label: 'Datexel DAT 3130', brand: 'Datexel', desc: '4 Relay + 4 Digital Input',
-    tags: ['Relay_0','Relay_1','Relay_2','Relay_3','Input_0','Input_1','Input_2','Input_3','Inputs_Bitmap','Outputs_Bitmap','Coils_Mirror','Watchdog_Enable','Watchdog_Event','PowerUp_Event','Latch_High_0','Latch_High_1','Latch_High_2','Latch_High_3','Watchdog_Timer','PowerUp_Safe_Value']
-  }
-};
-
-// ═══ DEVICE STATE ═══
-const deviceState = {};
-const lastSeen = {};
-
-function updateState(data) {
-  data.forEach(msg => {
-    const dev = msg.deviceId;
-    if (!dev || !msg.metrics || !msg.timestamp) return;
-    if (!deviceState[dev]) deviceState[dev] = {};
-    const t = new Date(msg.timestamp).getTime();
-    Object.entries(msg.metrics).forEach(([k, v]) => {
-      // Only update if newer
-      if (!deviceState[dev][k] || t >= deviceState[dev][k].ts) {
-        deviceState[dev][k] = { val: v, ts: t };
-      }
-    });
-    lastSeen[dev] = Math.max(lastSeen[dev] || 0, t);
-  });
+  document.getElementById('deviceBadge').textContent = `${Object.keys(devices).length} ONLINE`;
+  renderDevices(devices, metrics); renderAlerts(alerts); renderTimeline(data);
+  if (selectedDevice && metrics[selectedDevice]) renderMetrics(selectedDevice, metrics[selectedDevice]);
 }
 
 function renderDevices(devices, metrics) {
-  // Update lastSeen
-  Object.keys(devices).forEach(dev => lastSeen[dev] = Date.now());
-
   const grid = document.getElementById('deviceGrid'); grid.innerHTML = '';
-  const now = Date.now();
-
-  Object.entries(CATALOG).forEach(([devId, info]) => {
-    const color = DEVICE_COLORS[devId] || '#00d4ff';
-    const shortName = devId.replace('_Quadro','').replace('_test','');
-    const seenMs = lastSeen[devId];
-    const age = seenMs ? (now - seenMs) : null;
-
-    // Status: online <5min, idle 5-15min, offline >15min or never seen
-    let statusColor, statusLabel;
-    if (!seenMs) { statusColor = '#334155'; statusLabel = 'NO DATA'; }
-    else if (age < 5 * 60000) { statusColor = '#00ff9d'; statusLabel = 'ONLINE'; }
-    else if (age < 15 * 60000) { statusColor = '#f59e0b'; statusLabel = 'IDLE'; }
-    else { statusColor = '#ff6b35'; statusLabel = 'OFFLINE'; }
-
-    const activeMetrics = metrics[devId] || {};
-    const activeCount = Object.keys(activeMetrics).length;
-    const totalTags = info.tags.length;
-
+  Object.keys(devices).forEach(dev => {
+    const color = DEVICE_COLORS[dev] || '#00d4ff';
+    const shortName = dev.replace('_Quadro','').replace('_test','');
     const div = document.createElement('div');
-    div.className = `device-item${selectedDevice === devId ? ' active' : ''}`;
-    div.style.borderColor = selectedDevice === devId ? color : '';
-    div.innerHTML = `
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
-        <div class="device-name" style="margin:0">${shortName}</div>
-        <span style="font-size:9px;padding:2px 6px;border-radius:4px;background:${statusColor}22;color:${statusColor};border:1px solid ${statusColor}44">${statusLabel}</span>
-      </div>
-      <div style="font-size:10px;color:var(--text-dim);margin-bottom:4px">${info.brand} — ${info.desc}</div>
-      <div style="font-size:11px;color:${color};font-weight:600">${activeCount} / ${totalTags} tags active</div>
-    `;
-    div.onclick = () => {
-      selectedDevice = devId;
-      renderCatalogMetrics(devId, activeMetrics);
-      document.querySelectorAll('.device-item').forEach(d => { d.classList.remove('active'); d.style.borderColor = ''; });
-      div.classList.add('active');
-      div.style.borderColor = color;
-    };
+    div.className = `device-item${selectedDevice === dev ? ' active' : ''}`;
+    div.innerHTML = `<div class="device-name">${shortName} <span class="device-dot" style="background:${color}"></span></div><div class="device-count" style="color:${color}">${Object.keys(metrics[dev]||{}).length}</div><div class="device-sub">active metrics</div>`;
+    div.onclick = () => { selectedDevice = dev; renderMetrics(dev, metrics[dev]||{}); document.querySelectorAll('.device-item').forEach(d => d.classList.remove('active')); div.classList.add('active'); };
     grid.appendChild(div);
-  });
-}
-
-function renderCatalogMetrics(deviceId, activeMetrics) {
-  const info = CATALOG[deviceId];
-  if (!info) return;
-  document.getElementById('metricsTitle').textContent = deviceId;
-  const list = document.getElementById('metricsList');
-  list.innerHTML = '';
-
-  info.tags.forEach(tagId => {
-    const val = activeMetrics[tagId];
-    const isActive = val !== undefined;
-    const isAlert = ALERT_KEYS.includes(tagId) && val === true;
-
-    let valDisplay = '—';
-    let valColor = '#334155';
-
-    if (isActive) {
-      if (typeof val === 'boolean') {
-        valDisplay = val ? (isAlert ? 'TRUE ⚠️' : 'TRUE ✓') : 'FALSE';
-        valColor = val ? (isAlert ? 'var(--accent3)' : 'var(--accent2)') : 'var(--text-dim)';
-      } else if (typeof val === 'number') {
-        valDisplay = Math.round(val * 1000) / 1000;
-        valColor = 'var(--accent)';
-      } else {
-        valDisplay = val;
-        valColor = 'var(--text)';
-      }
-    }
-
-    const row = document.createElement('div');
-    row.className = 'metric-row';
-    row.style.opacity = isActive ? '1' : '0.35';
-    row.innerHTML = `
-      <span class="metric-name" style="display:flex;align-items:center;gap:6px">
-        <span style="width:6px;height:6px;border-radius:50%;background:${isActive ? (isAlert ? 'var(--accent3)' : 'var(--accent2)') : '#334155'};display:inline-block;flex-shrink:0"></span>
-        ${tagId}
-      </span>
-      <span class="metric-val" style="color:${valColor}">${valDisplay}</span>
-    `;
-    list.appendChild(row);
   });
 }
 
@@ -564,36 +400,12 @@ function renderMetrics(deviceId, obj) {
 function renderAlerts(alerts) {
   const list = document.getElementById('alertList');
   document.getElementById('alertBadge').textContent = `${alerts.length} ALERT`;
-  if (!alerts.length) { list.innerHTML = '<div class="no-data" style="color:var(--accent2)">✓ No active alerts</div>'; }
-  else {
-    list.innerHTML = '';
-    alerts.forEach(a => {
-      const div = document.createElement('div'); div.className = 'alert-item warn';
-      div.innerHTML = `<span>⚠️</span><div><div class="alert-text">${a.key} = true</div><div class="alert-sub">${a.device} — ${new Date(a.time).toLocaleTimeString()}</div></div>`;
-      list.appendChild(div);
-    });
-  }
-
-  // Render alert history
-  const hist = document.getElementById('alertHistory');
-  if (!hist) return;
-  const sorted = [...alertHistory].sort((a, b) => b.time - a.time);
-  if (!sorted.length) { hist.innerHTML = '<div class="no-data" style="padding:12px 0">No alerts in last 24h</div>'; return; }
-  hist.innerHTML = '';
-  sorted.forEach(a => {
-    const d = new Date(a.time);
-    const timeStr = d.getHours().toString().padStart(2,'0') + ':' + d.getMinutes().toString().padStart(2,'0');
-    const dateStr = d.toLocaleDateString([], {month:'short', day:'numeric'});
-    const color = DEVICE_COLORS[a.device] || '#ff6b35';
-    const row = document.createElement('div');
-    row.style.cssText = 'display:flex;align-items:center;gap:8px;padding:6px 4px;border-bottom:1px solid var(--border);font-size:11px';
-    row.innerHTML = `
-      <span style="color:var(--accent3);flex-shrink:0">⚠</span>
-      <span style="color:var(--text-dim);flex-shrink:0;width:80px">${timeStr} ${dateStr}</span>
-      <span style="color:${color};flex-shrink:0;width:80px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${a.device.replace('_Quadro','').replace('_test','')}</span>
-      <span style="color:var(--accent3);flex:1">${a.key}</span>
-    `;
-    hist.appendChild(row);
+  if (!alerts.length) { list.innerHTML = '<div class="no-data" style="color:var(--accent2)">✓ No active alerts</div>'; return; }
+  list.innerHTML = '';
+  alerts.forEach(a => {
+    const div = document.createElement('div'); div.className = 'alert-item warn';
+    div.innerHTML = `<span>⚠️</span><div><div class="alert-text">${a.key} = true</div><div class="alert-sub">${a.device} — ${new Date(a.time).toLocaleTimeString()}</div></div>`;
+    list.appendChild(div);
   });
 }
 
@@ -608,216 +420,6 @@ function renderTimeline(data) {
     item.innerHTML = `<div class="tl-time">${new Date(msg.timestamp).toLocaleTimeString()}</div><div class="tl-dot" style="background:${isAlert?'var(--accent3)':color}"></div><div class="tl-content">${k} = ${vd}<div class="tl-device">${msg.deviceId}</div></div>`;
     tl.appendChild(item);
   });
-}
-
-// ═══ DEVICE PANELS ═══
-function renderDevicePanels(metrics) {
-  renderWBPanel(metrics['WB_MSW_A'] || {}, metrics['WB_MSW_B'] || {});
-  renderMetricsPanel('eastronPanel', metrics['Eastrone_Quadro'] || {}, [
-    'Voltage_L3','Voltage_L3_L1','Voltage_Avg_LL','Voltage_L2_L3',
-    'Current_L3','Current_Avg','Current_Sum',
-    'Power_Active_Total','Power_Reactive_Total','Power_Apparent_Total',
-    'PowerFactor_Total','PowerFactor_L3',
-    'Frequency','THD_Voltage_L3','THD_Voltage_Avg_LN'
-  ]);
-  renderMetricsPanel('senecaPanel', metrics['SENECA_test_Quadro'] || {}, [
-    'Input_1','Input_2','Input_3','Input_4','Input_5','Input_6','Input_7','Input_8',
-    'Input_9','Input_10','Input_11','Input_12','Input_13','Input_14','Input_15','Input_16',
-    'Output_1','Output_2','Output_3','Output_4','Output_5','Output_6','Output_7','Output_8',
-    'Inputs_1_16_Bitmap','Outputs_1_8_Bitmap'
-  ]);
-  renderMetricsPanel('datPanel', metrics['Dat3130_QuadroC'] || {}, [
-    'Relay_0','Relay_1','Relay_2','Relay_3',
-    'Input_0','Input_1','Input_2','Input_3',
-    'Watchdog_Event','PowerUp_Event','Watchdog_Enable',
-    'Latch_High_0','Latch_High_1','Latch_High_2','Latch_High_3',
-    'Inputs_Bitmap','Outputs_Bitmap','Coils_Mirror'
-  ]);
-}
-
-function renderWBPanel(wa, wb) {
-  const el = document.getElementById('wbBars');
-  if (!el) return;
-  const bars = [
-    ['Temperature A', wa.Temperature ?? wa.Temperature_fine, 50, 'var(--accent3)', '°C'],
-    ['Temperature B', wb.Temperature ?? wb.Temperature_fine, 50, 'var(--accent3)', '°C'],
-    ['Humidity A', wa.Humidity ?? wa.Humidity_fine, 100, 'var(--accent)', '%'],
-    ['Humidity B', wb.Humidity ?? wb.Humidity_fine, 100, 'var(--accent)', '%'],
-    ['CO2 A', wa.CO2_ppm, 2000, 'var(--accent2)', 'ppm'],
-    ['VOC A', wa.VOC_eCO2, 2000, 'var(--accent4)', ''],
-    ['VOC B', wb.VOC_eCO2, 2000, 'var(--accent4)', ''],
-    ['Air Quality A', wa.Air_quality, 1000, 'var(--accent5)', ''],
-    ['Illuminance A', wa.Illuminance_raw ?? wa.Illuminance, 1000, 'var(--accent5)', 'lx'],
-    ['Illuminance B', wb.Illuminance_raw ?? wb.Illuminance, 1000, 'var(--accent5)', 'lx'],
-    ['Noise A', wa.Noise_level, 100, '#64748b', 'dB'],
-    ['Noise B', wb.Noise_level, 100, '#64748b', 'dB'],
-  ];
-  el.innerHTML = '';
-  let hasData = false;
-  bars.forEach(([label, val, max, color, unit]) => {
-    if (val === undefined || val === null) return;
-    hasData = true;
-    const pct = Math.min(100, Math.round((val / max) * 100));
-    const row = document.createElement('div'); row.className = 'bar-row';
-    row.innerHTML = `
-      <div class="bar-label">${label}</div>
-      <div class="bar-track"><div class="bar-fill" style="width:${pct}%;background:${color}"></div></div>
-      <div class="bar-val">${Math.round(val*100)/100}${unit}</div>
-    `;
-    el.appendChild(row);
-  });
-  if (!hasData) el.innerHTML = '<div class="no-data">Waiting for data...</div>';
-}
-
-function renderMetricsPanel(elemId, metricsObj, keys) {
-  const el = document.getElementById(elemId);
-  if (!el) return;
-  el.innerHTML = '';
-  let hasData = false;
-  keys.forEach(k => {
-    const v = metricsObj[k];
-    if (v === undefined) return;
-    hasData = true;
-    const isAlert = ALERT_KEYS.includes(k) && v === true;
-    let cls = 'num', display = v;
-    if (typeof v === 'boolean') {
-      cls = v ? (isAlert ? 'alert' : 'bool-true') : 'bool-false';
-      display = v ? (isAlert ? 'TRUE ⚠️' : 'TRUE ✓') : 'FALSE';
-    } else if (typeof v === 'number') {
-      display = Math.round(v * 1000) / 1000;
-    }
-    const row = document.createElement('div'); row.className = 'metric-row';
-    row.innerHTML = `<span class="metric-name">${k}</span><span class="metric-val ${cls}">${display}</span>`;
-    el.appendChild(row);
-  });
-  if (!hasData) el.innerHTML = '<div class="no-data">Waiting for data...</div>';
-}
-
-// ═══ CHART HISTORY ═══
-const hx = { temp: [], hum: [], air: [], volt: [] };
-const alertHistory = []; // { device, key, time }
-const CUTOFF_24H = () => Date.now() - 24 * 60 * 60 * 1000;
-
-function pushH(arr, val, t) {
-  if (typeof val !== 'number' || isNaN(val)) return;
-  arr.push([t, val]);
-  while (arr.length && arr[0][0] < CUTOFF_24H()) arr.shift();
-}
-
-async function loadWarmHistory() {
-  try {
-    const res = await fetch(`${apiUrl}?tenantId=${encodeURIComponent(tenantId)}&apiKey=${encodeURIComponent(apiKey)}&mode=warm`);
-    if (!res.ok) return;
-    const json = await res.json();
-    const data = json.data || [];
-
-    data.forEach(msg => {
-      if (!msg.metrics || !msg.timestamp) return;
-      const t = new Date(msg.timestamp).getTime();
-      if (t < CUTOFF_24H()) return;
-      const k = Object.keys(msg.metrics)[0];
-      const v = msg.metrics[k];
-
-      // Update deviceState for ALL metrics (not just numbers)
-      if (msg.deviceId) {
-        if (!deviceState[msg.deviceId]) deviceState[msg.deviceId] = {};
-        if (!deviceState[msg.deviceId][k] || t >= (deviceState[msg.deviceId][k].ts || 0)) {
-          deviceState[msg.deviceId][k] = { val: v, ts: t };
-        }
-        lastSeen[msg.deviceId] = Math.max(lastSeen[msg.deviceId] || 0, t);
-      }
-
-      // Alert history from warm data
-      if (typeof v === 'boolean' && v === true && ALERT_KEYS.includes(k)) {
-        const exists = alertHistory.some(a => a.device === msg.deviceId && a.key === k && Math.abs(a.time - t) < 60000);
-        if (!exists) alertHistory.push({ device: msg.deviceId, key: k, time: t });
-      }
-
-      // Push numeric values to chart history
-      if (typeof v !== 'number') return;
-      if (msg.deviceId === 'WB_MSW_A' || msg.deviceId === 'WB_MSW_B') {
-        if (k === 'Temperature' || k === 'Temperature_fine') pushH(hx.temp, v, t);
-        if (k === 'Humidity' || k === 'Humidity_fine') pushH(hx.hum, v, t);
-      }
-      if (msg.deviceId === 'WB_MSW_A' && (k === 'Air_quality' || k === 'CO2_ppm')) pushH(hx.air, v, t);
-      if (msg.deviceId === 'Eastrone_Quadro' && (k === 'Voltage_L3_L1' || k === 'Voltage_Avg_LL' || k === 'Voltage_L3')) pushH(hx.volt, v, t);
-    });
-
-    Object.keys(hx).forEach(k => hx[k].sort((a, b) => a[0] - b[0]));
-    console.log('Warm history loaded:', 'temp='+hx.temp.length, 'hum='+hx.hum.length, 'air='+hx.air.length, 'volt='+hx.volt.length, 'total='+data.length);
-
-    // Rebuild metrics from state and re-render everything
-    const devices = {}, metrics = {};
-    Object.entries(deviceState).forEach(([dev, tags]) => {
-      devices[dev] = Object.keys(tags).length;
-      metrics[dev] = {};
-      Object.entries(tags).forEach(([k, {val}]) => { metrics[dev][k] = val; });
-    });
-
-    renderDevices(devices, metrics);
-    renderDevicePanels(metrics);
-    renderCharts();
-    renderAlerts([]);
-    if (selectedDevice) renderCatalogMetrics(selectedDevice, metrics[selectedDevice] || {});
-
-  } catch(e) {}
-}
-
-function renderCharts() {
-  drawChart('cTemp', hx.temp, '#ff6b35', '°C');
-  drawChart('cHum',  hx.hum,  '#00d4ff', '%');
-  drawChart('cAir',  hx.air,  '#00ff9d', '');
-  drawChart('cVolt', hx.volt, '#f59e0b', 'V');
-}
-
-function drawChart(id, data, color, unit) {
-  const el = document.getElementById(id);
-  if (!el) return;
-  const W = 400, H = 120;
-  const pl = 42, pr = 8, pt = 14, pb = 22;
-  const cW = W - pl - pr, cH = H - pt - pb;
-  const maxT = Date.now(), minT = maxT - 24 * 60 * 60 * 1000;
-  const sorted = data.filter(d => d[0] >= minT && d[0] <= maxT).sort((a, b) => a[0] - b[0]);
-  if (!sorted.length) {
-    el.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:120px;font-size:11px;color:#334155">No data yet</div>';
-    return;
-  }
-  const vals = sorted.map(d => d[1]);
-  const minV = Math.min(...vals), maxV = Math.max(...vals);
-  const vpad = (maxV - minV) * 0.15 || 1;
-  const lo = minV - vpad, hi = maxV + vpad;
-  const px = t => pl + ((t - minT) / (maxT - minT)) * cW;
-  const py = v => pt + cH - ((v - lo) / (hi - lo)) * cH;
-  let pathD = '';
-  sorted.forEach((d, i) => {
-    const x = px(d[0]).toFixed(1), y = py(d[1]).toFixed(1);
-    if (i === 0) { pathD += `M${x},${y}`; return; }
-    if (d[0] - sorted[i-1][0] > 10 * 60 * 1000) pathD += ` M${x},${y}`;
-    else pathD += ` L${x},${y}`;
-  });
-  const yT = [minV, (minV+maxV)/2, maxV];
-  const yL = yT.map(v => `<text x="${pl-4}" y="${(py(v)+3.5).toFixed(1)}" text-anchor="end" fill="#64748b" font-size="9" font-family="Courier New,monospace" direction="ltr">${Math.round(v*10)/10}</text>`).join('');
-  const step = 60 * 60 * 1000;
-  const xTicks = [];
-  for (let t = minT; t <= maxT; t += step) xTicks.push(t);
-  const xL = xTicks.filter((_,i) => i % 2 === 0).map(t => {
-    const d = new Date(t);
-    const lb = d.getHours().toString().padStart(2,'0') + ':' + d.getMinutes().toString().padStart(2,'0');
-    return `<text x="${px(t).toFixed(1)}" y="${H-3}" text-anchor="middle" fill="#64748b" font-size="9" font-family="Courier New,monospace" direction="ltr">${lb}</text>`;
-  }).join('');
-  const gridH = yT.map(v => `<line x1="${pl}" y1="${py(v).toFixed(1)}" x2="${pl+cW}" y2="${py(v).toFixed(1)}" stroke="#1e2d45" stroke-width="1"/>`).join('');
-  const gridV = xTicks.map(t => `<line x1="${px(t).toFixed(1)}" y1="${pt}" x2="${px(t).toFixed(1)}" y2="${pt+cH}" stroke="#1e2d45" stroke-width="1" stroke-dasharray="2,3"/>`).join('');
-  const latest = vals[vals.length-1];
-  el.innerHTML = `<div style="position:relative;height:${H}px;direction:ltr">
-    <div style="position:absolute;top:2px;right:4px;font-size:12px;font-weight:600;color:${color};font-family:'IBM Plex Mono',monospace;direction:ltr">${Math.round(latest*100)/100}${unit?' '+unit:''}</div>
-    <svg xmlns="http://www.w3.org/2000/svg" width="100%" height="${H}" viewBox="0 0 ${W} ${H}" style="direction:ltr">
-      ${gridH}${gridV}
-      <path d="${pathD}" fill="none" stroke="${color}" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
-      <line x1="${pl}" y1="${pt}" x2="${pl}" y2="${pt+cH}" stroke="#2d3d55" stroke-width="1"/>
-      <line x1="${pl}" y1="${pt+cH}" x2="${pl+cW}" y2="${pt+cH}" stroke="#2d3d55" stroke-width="1"/>
-      ${yL}${xL}
-    </svg>
-  </div>`;
 }
 
 document.addEventListener('keydown', e => {
